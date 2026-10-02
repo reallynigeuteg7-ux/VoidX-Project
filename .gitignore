@@ -1,0 +1,10 @@
+node_modules/
+.gradle/
+/build/
+app/build/
+local.properties
+*.jks
+*.keystore
+*.idsig
+.DS_Store
+Thumbs.db
