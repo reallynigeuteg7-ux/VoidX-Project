@@ -1,4 +1,4 @@
-param([string]$Toolchain = (Join-Path $PSScriptRoot '..\toolchain'), [string]$Output = (Join-Path $PSScriptRoot '..\..\outputs\VoidX-0.2.0.apk'))
+param([string]$Toolchain = (Join-Path $PSScriptRoot '..\toolchain'), [string]$Output = (Join-Path $PSScriptRoot '..\..\outputs\VoidX-0.3.0.apk'))
 $ErrorActionPreference = 'Stop'
 $Toolchain = [IO.Path]::GetFullPath($Toolchain)
 $jdk = (Get-ChildItem (Join-Path $Toolchain 'jdk') -Directory | Select-Object -First 1).FullName

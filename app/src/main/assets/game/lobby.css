@@ -1,0 +1,107 @@
+/* Full-screen game lobby. Controls sit at the screen edges for thumb access. */
+#menu.lobby {
+  padding: max(16px, env(safe-area-inset-top)) max(28px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(28px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(ellipse at 50% 42%, #07070722 0%, #07070788 65%, #050505e8 100%), linear-gradient(0deg, #050505da, transparent 50%, #05050580);
+}
+.lobby-top { display: flex; justify-content: space-between; align-items: center; min-height: 60px; flex-shrink: 0; }
+.lobby-brand { display: flex; align-items: center; gap: 18px; }
+.lobby-brand strong { font: 900 24px Arial, sans-serif; letter-spacing: -1px; }
+.lobby-brand strong span { font-style: italic; }
+.lobby-offline { display: flex; align-items: center; gap: 7px; font: 9px 'Courier New', monospace; letter-spacing: 1.5px; color: #afafab; }
+.lobby-offline i { width: 5px; height: 5px; background: #e8e8e5; box-shadow: 0 0 8px #fff5; }
+.lobby-tools { display: flex; gap: 10px; align-items: center; }
+.lobby-tool, .lobby-record { height: 58px; background: #0e0e0ec0; border: 1px solid #ffffff30; backdrop-filter: blur(8px); }
+.lobby-tool { width: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+.lobby svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.lobby-tool svg { width: 21px; height: 21px; }
+.lobby-tool b, .lobby-tool span { font: 7px 'Courier New', monospace; letter-spacing: .4px; color: #aaa; }
+.lobby-tool b { color: #efefeb; }
+.lobby-record { padding: 0 17px; display: flex; gap: 12px; align-items: center; }
+.lobby-record svg { width: 20px; height: 20px; color: #b7b7b2; }
+.lobby-record small { display: block; color: #999994; font: 8px 'Courier New', monospace; letter-spacing: 1px; }
+.lobby-record b { display: block; font: 17px 'Courier New', monospace; letter-spacing: 2px; margin-top: 5px; }
+.lobby-center { display: flex; flex: 1; min-height: 0; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+.lobby-emblem { width: min(58vw, 650px); height: min(41vh, 340px); position: relative; }
+.lobby-emblem img { width: 100%; height: 100%; object-fit: cover; mix-blend-mode: screen; filter: contrast(1.13); mask-image: radial-gradient(ellipse, #000 50%, transparent 80%); -webkit-mask-image: radial-gradient(ellipse, #000 50%, transparent 80%); }
+.emblem-corner { position: absolute; width: 18px; height: 18px; border-color: #ffffff45; border-style: solid; }
+.corner-tl { top: 10%; left: 3%; border-width: 1px 0 0 1px; }
+.corner-br { bottom: 10%; right: 3%; border-width: 0 1px 1px 0; }
+#menu .lobby-title { margin: 5px 0 7px; padding-left: .2em; font-size: clamp(34px, 5.3vw, 66px); line-height: 1; letter-spacing: .2em; color: #f5f5ef; font-weight: 900; text-shadow: 0 3px 25px #000; }
+#menu .lobby-title span { color: #f5f5ef; font-style: italic; }
+.lobby-subtitle { margin: 0; font: 9px 'Courier New', monospace; letter-spacing: 4px; color: #b1b1aa; text-shadow: 0 1px 4px #000; }
+.lobby-bottom { display: grid; grid-template-columns: 156px minmax(0, 1fr) 264px; gap: 12px; height: 112px; flex: 0 0 auto; max-width: 1160px; width: 100%; align-self: center; }
+.lobby-arsenal, .lobby-mission { background: #101010d9; border: 1px solid #ffffff35; backdrop-filter: blur(10px); }
+.lobby-arsenal { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.lobby-arsenal svg { width: 52px; height: 26px; color: #c4c4be; }
+.lobby-arsenal strong { font-size: 12px; letter-spacing: 1.5px; }
+.lobby-arsenal > span { font: 8px 'Courier New', monospace; letter-spacing: .5px; color: #91918b; }
+.lobby-mission { display: flex; align-items: center; padding: 16px; gap: 19px; border-top-color: #ddddcf; position: relative; min-width: 0; }
+.lobby-mission::before { content: ''; position: absolute; left: -1px; top: -1px; width: 34px; height: 3px; background: #e4e4dd; }
+.mission-insignia { height: 70px; width: 70px; flex: 0 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid #ffffff30; background: repeating-linear-gradient(0deg, #ffffff04, #ffffff04 1px, transparent 1px, transparent 4px); }
+.mission-insignia span { font: 28px 'Courier New', monospace; color: #cecec8; }
+.mission-insignia small { font: 7px 'Courier New', monospace; letter-spacing: 2px; color: #969690; margin-top: 4px; }
+.mission-detail { min-width: 0; }
+.mission-detail > small { font: 8px 'Courier New', monospace; letter-spacing: 1.6px; color: #9e9e98; }
+.mission-detail h2 { font-size: clamp(14px, 1.7vw, 21px); letter-spacing: .2px; margin: 8px 0 10px; font-weight: 700; white-space: nowrap; }
+.mission-detail p { display: flex; align-items: center; gap: 12px; margin: 0; color: #b7b7af; font: 9px 'Courier New', monospace; letter-spacing: .7px; }
+.mission-detail p i { width: 3px; height: 3px; background: #787873; }
+.lobby-start { position: relative; color: #101010; background: #ebebe5; border: 1px solid #fff; display: grid; grid-template-columns: 1fr 32px; align-content: center; align-items: center; padding: 0 25px; text-align: left; gap: 9px; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0 100%); }
+.lobby-start > span { font-size: 30px; font-weight: 900; letter-spacing: 1px; }
+.lobby-start svg { width: 27px; height: 27px; stroke-width: 2; }
+.lobby-start small { grid-column: 1 / -1; font: 9px 'Courier New', monospace; letter-spacing: 1.2px; color: #494945; }
+@media (max-height: 520px) {
+  #menu.lobby { padding-top: max(10px, env(safe-area-inset-top)); padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  .lobby-top { min-height: 48px; }
+  .lobby-tool, .lobby-record { height: 48px; }
+  .lobby-tool { width: 52px; gap: 4px; }
+  .lobby-tool svg { width: 19px; height: 19px; }
+  .lobby-emblem { height: min(37vh, 168px); width: min(48vw, 430px); }
+  #menu .lobby-title { font-size: 36px; margin: 0 0 6px; }
+  .lobby-subtitle { font-size: 8px; letter-spacing: 3px; }
+  .lobby-bottom { height: 84px; grid-template-columns: 130px minmax(0, 1fr) 214px; gap: 10px; }
+  .lobby-arsenal { gap: 5px; }
+  .lobby-arsenal svg { width: 40px; height: 20px; }
+  .lobby-arsenal strong { font-size: 10px; }
+  .lobby-arsenal > span { font-size: 7px; }
+  .lobby-mission { padding: 10px; gap: 12px; }
+  .mission-insignia { width: 53px; height: 58px; }
+  .mission-insignia span { font-size: 23px; }
+  .mission-detail h2 { font-size: 17px; margin: 6px 0 7px; }
+  .mission-detail p { font-size: 8px; }
+  .lobby-start { padding: 0 21px; gap: 6px; }
+  .lobby-start > span { font-size: 25px; }
+  .lobby-start small { font-size: 8px; }
+}
+@media (max-width: 760px) and (orientation: landscape) {
+  #menu.lobby { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .lobby-brand { gap: 10px; }
+  .lobby-brand strong { font-size: 21px; }
+  .lobby-offline { font-size: 8px; letter-spacing: .5px; }
+  .lobby-tools { gap: 6px; }
+  .lobby-record { padding: 0 10px; gap: 8px; }
+  .lobby-record small { font-size: 7px; letter-spacing: .3px; }
+  .lobby-record b { font-size: 14px; margin-top: 3px; }
+  .lobby-record svg { width: 16px; }
+  .lobby-tool { width: 48px; }
+  .lobby-emblem { width: min(50vw, 350px); }
+  .lobby-bottom { grid-template-columns: 92px minmax(0, 1fr) 148px; gap: 7px; height: 78px; }
+  .lobby-arsenal > span { display: none; }
+  .lobby-arsenal strong { font-size: 9px; letter-spacing: 1px; }
+  .lobby-mission { gap: 9px; padding: 9px; }
+  .mission-insignia { width: 43px; height: 55px; }
+  .mission-insignia small { font-size: 6px; letter-spacing: 1px; }
+  .mission-detail > small { font-size: 7px; letter-spacing: .6px; }
+  .mission-detail h2 { font-size: 13px; margin: 6px 0; }
+  .mission-detail p { gap: 7px; font-size: 7px; letter-spacing: 0; }
+  .lobby-start { padding: 0 14px; grid-template-columns: 1fr 20px; gap: 7px; }
+  .lobby-start > span { font-size: 22px; letter-spacing: 0; }
+  .lobby-start svg { width: 20px; height: 20px; }
+  .lobby-start small { font-size: 7px; letter-spacing: .1px; }
+}
+@media (max-height: 350px) {
+  .lobby-emblem { height: 100px; width: 260px; }
+  #menu .lobby-title { font-size: 28px; margin-bottom: 3px; }
+  .lobby-subtitle { font-size: 7px; letter-spacing: 2px; }
+}

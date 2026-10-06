@@ -1,15 +1,30 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><meta name="theme-color" content="#080808"><title>VoidX — Точка невозврата</title><link rel="stylesheet" href="style.css"></head>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><meta name="theme-color" content="#080808"><title>VoidX — Точка невозврата</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="lobby.css"></head>
 <body>
 <canvas id="scene" aria-label="Игровая арена VoidX"></canvas>
 <div id="grain"></div><div id="vignette"></div><div id="damage"></div>
-<main id="menu" class="screen">
- <header class="topbar"><a class="brand" href="#" aria-label="VoidX, главное меню">VOID<span>X</span></a><span class="edition">ТАКТИЧЕСКИЙ ШУТЕР / 01</span><button id="soundQuick" class="text-button" aria-label="Выключить звук">ЗВУК <b>ВКЛ</b></button></header>
- <div class="menu-body">
-  <section class="intro"><div class="eyebrow"><span class="status-dot"></span> СЕКТОР 07 · ЗОНА ОТЧУЖДЕНИЯ</div><h1>ТИШИНА.<br><span>ПЕРЕД БОЕМ.</span></h1><p class="tagline">Ни цвета. Ни компромиссов.<br>Только ты и то, что осталось за прицелом.</p><div class="menu-actions"><button id="start" class="primary"><span>НАЧАТЬ ОПЕРАЦИЮ</span><span class="arrow">↗</span></button><div class="secondary-row"><button id="arsenalBtn">АРСЕНАЛ <span>02</span></button><button id="settingsBtn">НАСТРОЙКИ <span>↗</span></button></div></div><div class="record">ЛУЧШИЙ РЕЗУЛЬТАТ <b id="bestScore">00000</b></div></section>
-  <div class="logo-art"><img src="logo.png" alt="Логотип VoidX — VX"/><div class="art-label"><span>VOIDX / SURVIVAL</span><span>EST. 2026</span></div></div>
+<main id="menu" class="screen lobby">
+ <header class="lobby-top">
+  <div class="lobby-brand"><strong>VOID<span>X</span></strong><span class="lobby-offline"><i></i>ОФЛАЙН</span></div>
+  <div class="lobby-tools">
+   <div class="lobby-record"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v6a5 5 0 0 1-10 0V3Z M7 5H3v3a4 4 0 0 0 4 4 M17 5h4v3a4 4 0 0 1-4 4 M12 14v5 M8 21h8"/></svg><div><small>ЛИЧНЫЙ РЕКОРД</small><b id="bestScore">00000</b></div></div>
+   <button id="soundQuick" class="lobby-tool" aria-label="Выключить звук"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4V9Z M17 8a6 6 0 0 1 0 8 M20 5a10 10 0 0 1 0 14"/></svg><b>ВКЛ</b></button>
+   <button id="settingsBtn" class="lobby-tool" aria-label="Настройки"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 3-1 3-3 1-2 3 2 2-1 3 3 2 3-1 2 2 3-2v-3l3-2-1-3-3-1-1-3h-4Z"/><circle cx="12" cy="11" r="3"/></svg><span>НАСТРОЙКИ</span></button>
+  </div>
+ </header>
+ <section class="lobby-center" aria-label="VoidX — тактический шутер">
+  <div class="lobby-emblem"><img src="logo.png" alt="Логотип VX"/><i class="emblem-corner corner-tl"></i><i class="emblem-corner corner-br"></i></div>
+  <h1 class="lobby-title">VOID<span>X</span></h1>
+  <p class="lobby-subtitle">ТАКТИЧЕСКИЙ ШУТЕР</p>
+ </section>
+ <div class="lobby-bottom">
+  <button id="arsenalBtn" class="lobby-arsenal"><svg viewBox="0 0 64 32" aria-hidden="true"><path d="M3 12h12V7h12v5h24v4h10v3H38v5H27l-2 6h-6l2-10H13l-5 7H3V12Z M28 12V5h9v7 M40 12v7"/></svg><strong>АРСЕНАЛ</strong><span>ВЫБРАТЬ ОРУЖИЕ</span></button>
+  <section class="lobby-mission" aria-label="Выбрана операция Мёртвый сектор">
+   <div class="mission-insignia" aria-hidden="true"><span>07</span><small>СЕКТОР</small></div>
+   <div class="mission-detail"><small>ОПЕРАЦИЯ 001</small><h2>МЁРТВЫЙ СЕКТОР</h2><p><span>ВЫЖИВАНИЕ</span><i></i><span>5 ВОЛН</span></p></div>
+  </section>
+  <button id="start" class="lobby-start"><span>ИГРАТЬ</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15 M13 5l7 7-7 7"/></svg><small>НАЧАТЬ ОПЕРАЦИЮ</small></button>
  </div>
- <footer class="menu-footer"><div><small>ОПЕРАЦИЯ 001</small><b>МЁРТВЫЙ СЕКТОР</b></div><div class="footer-description">Выживи. Зачисти пять волн.<br>Вернись из пустоты.</div><div class="footer-meta"><span>ОДИНОЧНАЯ ИГРА</span><small>OFFLINE · v0.2</small></div></footer>
 </main>
 <section id="hud" class="hidden">
  <div class="hud-top"><div class="mission"><b>VOID<span>X</span></b><span id="wave">ВОЛНА 01 / 05</span></div><div class="wave-track"><span id="remaining">ЦЕЛИ: 04</span><i></i><span id="score">00000</span></div><button id="pauseBtn" aria-label="Пауза">Ⅱ</button></div>

@@ -1,6 +1,6 @@
 {
  "name":"voidx",
- "version":"0.2.0",
+ "version":"0.3.0",
  "private":true,
  "scripts":{
   "build:game":"esbuild game-src/game.js --bundle --minify --target=es2020 --define:__VOIDX_TEST__=false --outfile=app/src/main/assets/game/game.js",
