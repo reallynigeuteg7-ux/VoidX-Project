@@ -8,3 +8,14 @@ local.properties
 *.idsig
 .DS_Store
 Thumbs.db
+unity/Library/
+unity/Temp/
+unity/Obj/
+unity/Logs/
+unity/UserSettings/
+unity/Builds/
+unity/MemoryCaptures/
+unity/.vs/
+unity/.utmp/
+unity/*.csproj
+unity/*.sln*
