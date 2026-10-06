@@ -17,5 +17,6 @@ unity/Builds/
 unity/MemoryCaptures/
 unity/.vs/
 unity/.utmp/
+unity/Assets/Resources/PerformanceTestRun*.json*
 unity/*.csproj
 unity/*.sln*

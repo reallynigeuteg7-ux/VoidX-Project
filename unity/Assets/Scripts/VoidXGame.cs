@@ -27,15 +27,17 @@ namespace VoidX
         public Vector2 MoveInput, LookInput;
         public bool FireInput;
         public bool Touch => Application.isMobilePlatform || Input.touchSupported;
+        public bool AutomatedCheck { get; private set; }
         public Camera View { get; private set; }
         public CharacterController Player { get; private set; }
         public VoidXUI UI { get; private set; }
         Transform[] guns;
+        VoidXWeaponPose[] weaponPoses;
         Light muzzleLight;
         GameObject muzzleFlash;
         AudioSource audioSource;
         AudioClip rifleSound, shotgunSound, hitSound, reloadSound;
-        float yaw, pitch, cooldown, recoil, flashLeft, stepPhase, spawnTime, between, navTime, verticalSpeed;
+        float yaw, pitch, cooldown, recoil, flashLeft, stepPhase, spawnTime, between, navTime, verticalSpeed, pumpLeft;
         int toSpawn, shotCount, hitCount;
         FlowMap navigation;
         readonly List<Operative> enemies = new();
@@ -51,24 +53,36 @@ namespace VoidX
 
         void Awake()
         {
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            AutomatedCheck = Array.IndexOf(Environment.GetCommandLineArgs(), "--voidx-smoke") >= 0;
+#endif
             Application.targetFrameRate = 60; Screen.sleepTimeout = SleepTimeout.NeverSleep;
+            if (AutomatedCheck) Application.runInBackground = true;
             Screen.orientation = ScreenOrientation.LandscapeLeft; Input.multiTouchEnabled = true;
             Sensitivity = PlayerPrefs.GetFloat("voidx.sensitivity", 50); Volume = PlayerPrefs.GetFloat("voidx.volume", .65f); Quality = PlayerPrefs.GetInt("voidx.quality", 1);
             VoidXWorld.Build();
             var player = new GameObject("Player"); player.layer = 2; Player = player.AddComponent<CharacterController>(); Player.height = 1.75f; Player.radius = .34f; Player.center = new Vector3(0, .9f, 0); Player.stepOffset = .28f; Player.skinWidth = .025f; Player.enabled = false;
             View = new GameObject("FPS camera").AddComponent<Camera>(); View.tag = "MainCamera"; View.transform.SetParent(player.transform, false); View.transform.localPosition = new Vector3(0, 1.65f, 0); View.fieldOfView = 74; View.nearClipPlane = .035f; View.farClipPlane = 130; View.allowHDR = true;
-            var cameraData = View.GetUniversalAdditionalCameraData(); cameraData.renderPostProcessing = true; cameraData.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+            var cameraData = View.GetUniversalAdditionalCameraData(); cameraData.renderPostProcessing = false;
             View.gameObject.AddComponent<AudioListener>();
             var volume = new GameObject("Monochrome film grade").AddComponent<UnityEngine.Rendering.Volume>(); volume.isGlobal = true; volume.sharedProfile = Resources.Load<VolumeProfile>("VoidXGrade");
-            guns = new[] { VoidXWorld.Weapon(View.transform, 0), VoidXWorld.Weapon(View.transform, 1) };
-            foreach (var gun in guns) { gun.localPosition = new Vector3(.22f, -.22f, .42f); gun.gameObject.SetActive(false); }
-            muzzleFlash = VoidXWorld.Part(View.transform, "Muzzle flash", new Vector3(.22f, -.2f, 1.13f), new Vector3(.095f, .095f, .13f), VoidXWorld.Glow, PrimitiveType.Sphere); muzzleFlash.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off; muzzleFlash.SetActive(false);
-            muzzleLight = new GameObject("Muzzle illumination").AddComponent<Light>(); muzzleLight.transform.SetParent(View.transform, false); muzzleLight.transform.localPosition = new Vector3(.22f, -.2f, 1.05f); muzzleLight.type = LightType.Point; muzzleLight.range = 4; muzzleLight.intensity = 0;
+            // A small, separately lit first-person stage renders over the arena; nearby walls cannot cut through hands.
+            const int viewLayer = 31; View.cullingMask &= ~(1 << viewLayer);
+            var weaponCamera = new GameObject("First person presentation camera").AddComponent<Camera>(); weaponCamera.transform.position = new Vector3(0,-200,0); weaponCamera.cullingMask = 1 << viewLayer;
+            weaponCamera.fieldOfView = View.fieldOfView; weaponCamera.nearClipPlane = .025f; weaponCamera.farClipPlane = 3; weaponCamera.allowHDR = true;
+            var weaponData = weaponCamera.GetUniversalAdditionalCameraData(); weaponData.renderType = CameraRenderType.Overlay; weaponData.renderPostProcessing = true; weaponData.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing; cameraData.cameraStack.Add(weaponCamera);
+            void HandLight(string name,Vector3 at,float intensity) { var light=new GameObject(name).AddComponent<Light>(); light.transform.position=weaponCamera.transform.position+at; light.type=LightType.Point; light.range=2.5f; light.intensity=intensity; light.color=Color.white; light.cullingMask=1<<viewLayer; light.shadows=LightShadows.None; }
+            HandLight("Soft glove key",new Vector3(-.5f,.45f,.3f),1.2f); HandLight("Soft glove fill",new Vector3(.5f,.25f,.15f),.5f);
+            guns = new[] { VoidXWorld.Weapon(weaponCamera.transform, 0), VoidXWorld.Weapon(weaponCamera.transform, 1) };
+            weaponPoses = new[] { guns[0].GetComponent<VoidXWeaponPose>(), guns[1].GetComponent<VoidXWeaponPose>() };
+            foreach (var gun in guns) { gun.localPosition = new Vector3(.18f, -.11f, .56f); foreach(var t in gun.GetComponentsInChildren<Transform>())t.gameObject.layer=viewLayer; gun.gameObject.SetActive(false); }
+            muzzleFlash = VoidXWorld.Part(View.transform, "Muzzle flash", new Vector3(.18f, -.127f, 1.30f), new Vector3(.095f, .095f, .13f), VoidXWorld.Glow, PrimitiveType.Sphere); muzzleFlash.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off; muzzleFlash.SetActive(false);
+            muzzleLight = new GameObject("Muzzle illumination").AddComponent<Light>(); muzzleLight.transform.SetParent(View.transform, false); muzzleLight.transform.localPosition = new Vector3(.18f, -.127f, 1.24f); muzzleLight.type = LightType.Point; muzzleLight.range = 4; muzzleLight.intensity = 0;
             audioSource = gameObject.AddComponent<AudioSource>(); audioSource.spatialBlend = 0;
             rifleSound = Synth("Rifle", .19f, 2200, .8f); shotgunSound = Synth("Shotgun", .32f, 900, 1); hitSound = Synth("Hit", .1f, 680, .16f, true); reloadSound = Synth("Reload", .17f, 180, .17f, true);
             ApplyQuality(); UI = gameObject.AddComponent<VoidXUI>(); UI.Init(this); Menu();
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
-            if (Array.IndexOf(Environment.GetCommandLineArgs(), "--voidx-smoke") >= 0) gameObject.AddComponent<VoidXSmoke>();
+            if (AutomatedCheck) { UnityEngine.EventSystems.EventSystem.current.enabled = false; gameObject.AddComponent<VoidXSmoke>(); }
 #endif
         }
         AudioClip Synth(string name, float duration, float frequency, float power, bool tone = false)
@@ -86,7 +100,7 @@ namespace VoidX
         {
             var pipeline = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
             if (pipeline) { pipeline.renderScale = Quality == 0 ? .75f : Quality == 2 ? 1 : .9f; pipeline.shadowDistance = Quality == 0 ? 0 : 45; pipeline.msaaSampleCount = Quality == 2 ? 4 : 2; }
-            if (View) View.GetUniversalAdditionalCameraData().renderPostProcessing = true;
+            if (View) View.GetUniversalAdditionalCameraData().renderPostProcessing = false;
         }
         void ResetInput() { MoveInput = LookInput = Vector2.zero; FireInput = false; UI?.ClearInput(); }
         public void StartGame()
@@ -105,15 +119,15 @@ namespace VoidX
             if (State != Mode.Playing) return; State = Mode.Paused; ResetInput(); LockMouse(false); muzzleFlash.SetActive(false); muzzleLight.intensity = 0; UI.Refresh();
         }
         public void Resume() { if (State != Mode.Paused) return; State = Mode.Playing; ResetInput(); LockMouse(true); UI.Refresh(); }
-        void LockMouse(bool value) { if (!Application.isMobilePlatform) { Cursor.lockState = value ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !value; } }
+        void LockMouse(bool value) { if (!Application.isMobilePlatform) { Cursor.lockState = value && !AutomatedCheck ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !value || AutomatedCheck; } }
         void OnApplicationPause(bool paused) { if (paused) Pause(); }
-        void OnApplicationFocus(bool focused) { if (!focused) Pause(); }
+        void OnApplicationFocus(bool focused) { if (!focused && !AutomatedCheck) Pause(); }
         void Finish(bool win)
         {
             State = Mode.Result; ResetInput(); LockMouse(false); if (win) Score += 1000; ResultTitle = win ? "СЕКТОР ЧИСТ." : "СИГНАЛ ПОТЕРЯН.";
             if (Score > Best) { PlayerPrefs.SetInt("voidx.best", Score); PlayerPrefs.Save(); } UI.Refresh();
         }
-        public void SelectWeapon(int index) { WeaponIndex = Mathf.Clamp(index, 0, 1); ReloadLeft = 0; cooldown = .25f; for (int i = 0; i < guns.Length; i++) guns[i].gameObject.SetActive(i == WeaponIndex); }
+        public void SelectWeapon(int index) { WeaponIndex = Mathf.Clamp(index, 0, 1); ReloadLeft = pumpLeft = 0; cooldown = .25f; for (int i = 0; i < guns.Length; i++) { guns[i].gameObject.SetActive(i == WeaponIndex); weaponPoses[i].Animate(0,0); } }
         public void Reload() { if (State != Mode.Playing || ReloadLeft > 0 || Ammo[WeaponIndex] >= Magazine[WeaponIndex] || Reserve[WeaponIndex] <= 0) return; ReloadLeft = WeaponIndex == 0 ? 1.75f : 2.3f; Sound(reloadSound); }
         void StartWave() { Wave++; toSpawn = 2 + Wave * 2; spawnTime = .3f; between = 0; Notice = "ВОЛНА 0" + Wave; NoticeLeft = 3; }
         void Spawn()
@@ -144,6 +158,7 @@ namespace VoidX
             if (State != Mode.Playing || cooldown > 0 || ReloadLeft > 0) return;
             if (Ammo[WeaponIndex] <= 0) { Reload(); return; }
             Ammo[WeaponIndex]--; shotCount++; cooldown = WeaponIndex == 0 ? .1f : .7f; recoil = WeaponIndex == 0 ? .065f : .13f; flashLeft = .045f; Sound(WeaponIndex == 0 ? rifleSound : shotgunSound);
+            if (WeaponIndex == 1) pumpLeft = .48f;
             int pellets = WeaponIndex == 0 ? 1 : 8; float spread = WeaponIndex == 0 ? .007f : .055f;
             for (int i = 0; i < pellets; i++)
             {
@@ -162,7 +177,7 @@ namespace VoidX
         void Update()
         {
             float dt = Mathf.Min(Time.deltaTime, .05f);
-            if (Input.GetKeyDown(KeyCode.Escape)) { if (State == Mode.Playing) Pause(); else if (State == Mode.Paused) Resume(); else UI.ClosePanel(); }
+            if (!AutomatedCheck && Input.GetKeyDown(KeyCode.Escape)) { if (State == Mode.Playing) Pause(); else if (State == Mode.Paused) Resume(); else UI.ClosePanel(); }
             if (State == Mode.Menu)
             {
                 Player.transform.position = new Vector3(Mathf.Sin(Time.time * .04f) * 3, 1.2f, 20); Player.transform.rotation = Quaternion.identity; View.transform.LookAt(new Vector3(0, 2.4f, -16)); return;
@@ -171,17 +186,21 @@ namespace VoidX
             Elapsed += dt; NoticeLeft = Mathf.Max(0, NoticeLeft - dt); HitMarker = Mathf.Max(0, HitMarker - dt); DamageFlash = Mathf.Max(0, DamageFlash - dt * 2);
             cooldown -= dt; recoil = Mathf.Lerp(recoil, 0, dt * 13); flashLeft -= dt; muzzleFlash.SetActive(flashLeft > 0); muzzleLight.intensity = flashLeft > 0 ? 2.8f : 0;
             if (ReloadLeft > 0) { ReloadLeft -= dt; if (ReloadLeft <= 0) { int n = Mathf.Min(Magazine[WeaponIndex] - Ammo[WeaponIndex], Reserve[WeaponIndex]); Ammo[WeaponIndex] += n; Reserve[WeaponIndex] -= n; ReloadLeft = 0; } }
-            if (Input.GetKeyDown(KeyCode.R)) Reload(); if (Input.GetKeyDown(KeyCode.Q)) SelectWeapon(1 - WeaponIndex); if (Input.GetKeyDown(KeyCode.Alpha1)) SelectWeapon(0); if (Input.GetKeyDown(KeyCode.Alpha2)) SelectWeapon(1);
-            Vector2 move = MoveInput + new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")); move = Vector2.ClampMagnitude(move, 1);
+            if (!AutomatedCheck) { if (Input.GetKeyDown(KeyCode.R)) Reload(); if (Input.GetKeyDown(KeyCode.Q)) SelectWeapon(1 - WeaponIndex); if (Input.GetKeyDown(KeyCode.Alpha1)) SelectWeapon(0); if (Input.GetKeyDown(KeyCode.Alpha2)) SelectWeapon(1); }
+            Vector2 move = MoveInput + (AutomatedCheck ? Vector2.zero : new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"))); move = Vector2.ClampMagnitude(move, 1);
             Vector2 look = LookInput; LookInput = Vector2.zero;
             if (Cursor.lockState == CursorLockMode.Locked) look += new Vector2(Input.GetAxis("Mouse X") * 12, Input.GetAxis("Mouse Y") * 12);
             yaw += look.x * (.035f + Sensitivity * .0014f); pitch = Mathf.Clamp(pitch - look.y * (.035f + Sensitivity * .0014f), -70, 70);
             Player.transform.rotation = Quaternion.Euler(0, yaw, 0); View.transform.localRotation = Quaternion.Euler(pitch - recoil * 28, 0, 0);
             if (Player.isGrounded && verticalSpeed < 0) verticalSpeed = -1; verticalSpeed -= 12 * dt;
-            Vector3 velocity = (Player.transform.right * move.x + Player.transform.forward * move.y) * (Input.GetKey(KeyCode.LeftShift) ? 5.4f : 4.25f); velocity.y = verticalSpeed; Player.Move(velocity * dt);
+            Vector3 velocity = (Player.transform.right * move.x + Player.transform.forward * move.y) * (!AutomatedCheck && Input.GetKey(KeyCode.LeftShift) ? 5.4f : 4.25f); velocity.y = verticalSpeed; Player.Move(velocity * dt);
             stepPhase += move.magnitude * dt * 9; View.transform.localPosition = new Vector3(0, 1.65f + Mathf.Sin(stepPhase) * .018f * move.magnitude, 0);
-            var gun = guns[WeaponIndex]; gun.localPosition = new Vector3(.22f + Mathf.Sin(stepPhase) * .006f, -.22f + Mathf.Cos(stepPhase * 2) * .004f - (ReloadLeft > 0 ? .08f : 0), .42f - recoil);
-            gun.localRotation = Quaternion.Euler(recoil * 40 + (ReloadLeft > 0 ? -18 * Mathf.Sin(ReloadLeft * 2) : 0), 0, ReloadLeft > 0 ? 14 : 0);
+            float reloadProgress = ReloadLeft > 0 ? 1 - ReloadLeft / (WeaponIndex == 0 ? 1.75f : 2.3f) : 0;
+            float reloadPose = Mathf.Pow(Mathf.Sin(reloadProgress * Mathf.PI), 2);
+            var gun = guns[WeaponIndex]; gun.localPosition = new Vector3(.18f + Mathf.Sin(stepPhase) * .006f, -.11f + Mathf.Cos(stepPhase * 2) * .004f - .035f * reloadPose, .56f - recoil);
+            gun.localRotation = Quaternion.Euler(recoil * 40 + 10 * reloadPose, -8 * reloadPose, 18 * reloadPose);
+            pumpLeft = Mathf.Max(0, pumpLeft - dt); weaponPoses[WeaponIndex].Animate(reloadProgress, pumpLeft > 0 ? Mathf.Sin((.48f - pumpLeft) / .48f * Mathf.PI) : 0);
+            muzzleFlash.transform.position = View.transform.TransformPoint(gun.localPosition + gun.localRotation * new Vector3(0,.013f,.74f)); muzzleFlash.transform.rotation = View.transform.rotation * gun.localRotation; muzzleLight.transform.position = View.transform.TransformPoint(gun.localPosition + gun.localRotation * new Vector3(0,.013f,.68f));
             if (FireInput || (Cursor.lockState == CursorLockMode.Locked && Input.GetMouseButton(0))) Shoot();
             if (toSpawn > 0) { spawnTime -= dt; if (spawnTime <= 0 && enemies.Count < 6) { Spawn(); spawnTime = 1.3f; } }
             navTime -= dt; if (navTime <= 0) { navigation = new FlowMap(Player.transform.position, VoidXWorld.Covers); navTime = .65f; }

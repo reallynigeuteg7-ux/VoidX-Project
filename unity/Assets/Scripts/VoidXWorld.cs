@@ -26,7 +26,7 @@ namespace VoidX
             {
                 float broad = Mathf.PerlinNoise(x * .048f + kind * 10, y * .048f);
                 float grain = Mathf.PerlinNoise(x * .51f + 8, y * .51f);
-                float g = .52f + (broad - .5f) * .22f + (grain - .5f) * .16f;
+                float g = .65f + (broad - .5f) * .16f + (grain - .5f) * .045f;
                 if (kind == 1) g -= Mathf.Pow(Mathf.Abs(Mathf.Sin(x * .31f + y * .012f)), 28) * .07f;
                 if (kind == 2) { g -= Mathf.Pow(Mathf.Abs(Mathf.Sin(x * .025f)), 60) * .16f; g -= Mathf.Pow(Mathf.Abs(Mathf.Sin(y * .025f)), 60) * .16f; }
                 return g;
@@ -34,7 +34,7 @@ namespace VoidX
             for (int y = 0; y < n; y++) for (int x = 0; x < n; x++)
             {
                 if (!normal) colors[y * n + x] = Grey(Height(x, y));
-                else { var v = new Vector3((Height(x - 1, y) - Height(x + 1, y)) * 2, (Height(x, y - 1) - Height(x, y + 1)) * 2, 1).normalized; colors[y * n + x] = new Color(v.x * .5f + .5f, v.y * .5f + .5f, v.z * .5f + .5f, v.x * .5f + .5f); }
+                else { var v = new Vector3((Height(x - 1, y) - Height(x + 1, y)) * 2, (Height(x, y - 1) - Height(x, y + 1)) * 2, 1).normalized; colors[y * n + x] = new Color(v.x * .5f + .5f, v.y * .5f + .5f, v.z * .5f + .5f, 1); }
             }
             tex.SetPixels(colors); tex.Apply(true, true); return tex;
         }
@@ -43,7 +43,7 @@ namespace VoidX
             var template = Resources.Load<Material>("VoidXLit");
             var mat = template ? new Material(template) : new Material(Shader.Find("Universal Render Pipeline/Lit")); mat.name = name; mat.enableInstancing = true;
             mat.SetColor("_BaseColor", Grey(shade)); mat.SetFloat("_Metallic", metal); mat.SetFloat("_Smoothness", smooth);
-            mat.SetTexture("_BaseMap", Surface(kind)); mat.SetTexture("_BumpMap", Surface(kind, true)); mat.EnableKeyword("_NORMALMAP"); mat.SetFloat("_BumpScale", .4f);
+            mat.SetTexture("_BaseMap", Surface(kind)); mat.SetTexture("_BumpMap", Surface(kind, true)); mat.EnableKeyword("_NORMALMAP"); mat.SetFloat("_BumpScale", .22f);
             return mat;
         }
         public static GameObject Part(Transform parent, string name, Vector3 pos, Vector3 size, Material mat, PrimitiveType type = PrimitiveType.Cube, bool collider = false)
@@ -213,7 +213,7 @@ namespace VoidX
             {
                 var o = new GameObject("Batched " + pair.Key.name); o.transform.SetParent(root, false);
                 var m = new Mesh { name = o.name, indexFormat = IndexFormat.UInt32 }; m.CombineMeshes(pair.Value.ToArray(), true, true);
-                o.AddComponent<MeshFilter>().sharedMesh = m; o.AddComponent<MeshRenderer>().sharedMaterial = pair.Key; o.isStatic = true;
+                o.AddComponent<MeshFilter>().sharedMesh = m; o.AddComponent<MeshRenderer>().sharedMaterial = pair.Key; o.AddComponent<VoidXRuntimeMesh>().Owned = m; o.isStatic = world;
                 if (world) foreach (var item in pair.Value) UnityEngine.Object.Destroy(item.mesh);
             }
         }
@@ -231,43 +231,12 @@ namespace VoidX
             var shape = dust.shape; shape.shapeType = ParticleSystemShapeType.Box; shape.scale = new Vector3(45, 10, 45);
             dust.GetComponent<ParticleSystemRenderer>().sharedMaterial = Resources.Load<Material>("VoidXParticles");
         }
-        public static Transform Weapon(Transform parent, int type)
-        {
-            var root = new GameObject(type == 0 ? "VX—01 Assault Rifle" : "VX—08 Shotgun").transform; root.SetParent(parent, false);
-            Part(root, "Receiver", new Vector3(0, 0, .03f), new Vector3(.105f, .115f, .31f), Black);
-            Part(root, "Upper receiver", new Vector3(0, .063f, .07f), new Vector3(.09f, .027f, .36f), Steel);
-            Part(root, "Handguard", new Vector3(0, -.005f, .31f), new Vector3(.09f, .09f, type == 0 ? .28f : .35f), Steel);
-            for (int i = 0; i < 9; i++)
-            {
-                Part(root, "Picatinny rail", new Vector3(0, .073f, .04f + i * .042f), new Vector3(.106f, .015f, .023f), Black);
-                foreach (int s in new[] { -1, 1 }) Part(root, "Cooling vent", new Vector3(s * .047f, .015f, .2f + i * .027f), new Vector3(.004f, .024f, .013f), Black);
-            }
-            var barrel = Part(root, "Barrel", new Vector3(0, .016f, .54f), new Vector3(.025f, .17f, .025f), Black, PrimitiveType.Cylinder); barrel.transform.localRotation = Quaternion.Euler(90, 0, 0);
-            var muzzle = Part(root, "Muzzle brake", new Vector3(0, .016f, .7f), new Vector3(.04f, .035f, .04f), Steel, PrimitiveType.Cylinder); muzzle.transform.localRotation = Quaternion.Euler(90, 0, 0);
-            Part(root, "Bore", new Vector3(0, .016f, .737f), new Vector3(.018f, .018f, .002f), Black);
-            Part(root, "Stock", new Vector3(0, -.015f, -.23f), new Vector3(.07f, .08f, .26f), Black);
-            Part(root, "Butt pad", new Vector3(0, -.035f, -.36f), new Vector3(.09f, .16f, .025f), Steel);
-            var grip = Part(root, "Pistol grip", new Vector3(0, -.115f, -.045f), new Vector3(.058f, .15f, .072f), Black); grip.transform.localRotation = Quaternion.Euler(-14, 0, 0);
-            var magazine = Part(root, "Magazine", new Vector3(0, -.13f, .08f), new Vector3(.065f, type == 0 ? .22f : .095f, .105f), Steel); magazine.transform.localRotation = Quaternion.Euler(-9, 0, 0);
-            Part(root, "Trigger guard", new Vector3(0, -.082f, -.02f), new Vector3(.025f, .013f, .09f), Steel);
-            Part(root, "Optic mount", new Vector3(0, .105f, .04f), new Vector3(.09f, .055f, .105f), Black);
-            var optic = Part(root, "Reflex sight", new Vector3(0, .154f, .04f), new Vector3(.065f, .042f, .065f), Steel, PrimitiveType.Cylinder); optic.transform.localRotation = Quaternion.Euler(90, 0, 0);
-            Part(root, "Optic glass", new Vector3(0, .154f, -.003f), new Vector3(.047f, .047f, .002f), Glass, PrimitiveType.Sphere);
-            for (int i = 0; i < 4; i++) foreach (int s in new[] { -1, 1 }) Part(root, "Receiver screws", new Vector3(s * .054f, .025f, -.065f + i * .06f), new Vector3(.006f, .011f, .011f), White, PrimitiveType.Sphere);
-            // Arms with segmented gloves, sleeve seam and wrist cuffs.
-            foreach (int side in new[] { -1, 1 })
-            {
-                var arm = Part(root, "Sleeve", new Vector3(side * .1f, -.155f, side == -1 ? .28f : -.075f), new Vector3(.09f, .28f, .1f), Concrete, PrimitiveType.Capsule); arm.transform.localRotation = Quaternion.Euler(48, side * 12, side * -20);
-                Part(root, "Glove", new Vector3(side * .054f, -.06f, side == -1 ? .28f : -.075f), new Vector3(.065f, .075f, .11f), Black, PrimitiveType.Capsule);
-                for (int f = 0; f < 4; f++) Part(root, "Finger", new Vector3(side * .057f, -.08f + f * .018f, side == -1 ? .27f : -.063f), new Vector3(.075f, .015f, .028f), Steel, PrimitiveType.Capsule);
-            }
-            Combine(root); foreach (var r in root.GetComponentsInChildren<Renderer>()) { r.shadowCastingMode = ShadowCastingMode.Off; r.receiveShadows = false; }
-            return root;
-        }
+        public static Transform Weapon(Transform parent, int type) => VoidXViewModel.Build(parent, type);
         public static Transform Operative(Transform parent, out Transform[] legs)
         {
             var root = new GameObject("Void operative").transform; root.SetParent(parent, false);
-            Part(root, "Armour torso", new Vector3(0, 1.08f, 0), new Vector3(.5f, .51f, .25f), Black, PrimitiveType.Capsule);
+            VoidXViewModel.Loft(root, "Tailored combat jacket", new[] {new Vector3(0,.83f,0),new Vector3(0,.98f,0),new Vector3(0,1.20f,0),new Vector3(0,1.36f,0),new Vector3(0,1.44f,0)},
+                new[] {new Vector2(.19f,.12f),new Vector2(.205f,.135f),new Vector2(.25f,.15f),new Vector2(.245f,.13f),new Vector2(.105f,.075f)}, VoidXViewModel.Fabric,Vector3.forward,20,4,.035f);
             Part(root, "Plate carrier", new Vector3(0, 1.17f, .15f), new Vector3(.38f, .32f, .08f), Steel);
             for (int i = -1; i <= 1; i++) Part(root, "Magazine pouch", new Vector3(i * .105f, 1.02f, .2f), new Vector3(.085f, .16f, .065f), Concrete);
             Part(root, "Radio", new Vector3(.22f, 1.35f, .09f), new Vector3(.06f, .12f, .06f), Steel);
@@ -278,18 +247,23 @@ namespace VoidX
             Part(root, "Helmet stripe", new Vector3(0, 1.76f, .04f), new Vector3(.05f, .045f, .16f), White);
             foreach (int side in new[] { -1, 1 })
             {
-                Part(root, "Arm", new Vector3(side * .29f, 1.18f, .095f), new Vector3(.14f, .34f, .16f), Concrete, PrimitiveType.Capsule).transform.localRotation = Quaternion.Euler(-50, 0, side * 15);
-                Part(root, "Gloved hand", new Vector3(side * .16f, 1.03f, .27f), new Vector3(.1f, .09f, .12f), Black, PrimitiveType.Sphere);
+                VoidXViewModel.Loft(root,"Bent combat sleeve",new[] {new Vector3(side*.235f,1.33f,0),new Vector3(side*.31f,1.19f,.025f),new Vector3(side*.315f,1.055f,.09f),new Vector3(side*.13f,1.09f,.265f)},
+                    new[] {new Vector2(.085f,.090f),new Vector2(.082f,.078f),new Vector2(.073f,.070f),new Vector2(.044f,.040f)},VoidXViewModel.Fabric,Vector3.up,16,4,.035f);
+                VoidXViewModel.Loft(root,"Gripping combat glove",new[] {new Vector3(side*.13f,1.09f,.25f),new Vector3(side*.10f,1.08f,.30f),new Vector3(side*.068f,1.08f,.34f)},
+                    new[] {new Vector2(.043f,.036f),new Vector2(.045f,.040f),new Vector2(.024f,.025f)},VoidXViewModel.Leather,Vector3.up,16,3);
             }
             Part(root, "Enemy rifle", new Vector3(.05f, 1.1f, .37f), new Vector3(.075f, .09f, .49f), Black);
             Part(root, "Enemy rail", new Vector3(.05f, 1.16f, .4f), new Vector3(.06f, .025f, .36f), Steel);
+            Combine(root);
             legs = new Transform[2];
             for (int i = 0; i < 2; i++)
             {
                 var leg = new GameObject("Animated leg").transform; leg.SetParent(root, false); leg.localPosition = new Vector3(i == 0 ? -.13f : .13f, .81f, 0); legs[i] = leg;
-                Part(leg, "Trousers", new Vector3(0, -.31f, 0), new Vector3(.18f, .64f, .2f), Concrete, PrimitiveType.Capsule);
-                Part(leg, "Knee pad", new Vector3(0, -.32f, .1f), new Vector3(.14f, .15f, .07f), Steel);
+                VoidXViewModel.Loft(leg,"Fitted combat trousers",new[] {new Vector3(0,-.015f,0),new Vector3(0,-.18f,0),new Vector3(0,-.36f,.026f),new Vector3(0,-.52f,.016f),new Vector3(0,-.67f,.007f)},
+                    new[] {new Vector2(.112f,.115f),new Vector2(.100f,.105f),new Vector2(.079f,.087f),new Vector2(.072f,.083f),new Vector2(.058f,.063f)},VoidXViewModel.Fabric,Vector3.forward,16,4,.04f);
+                Part(leg, "Knee pad", new Vector3(0, -.36f, .108f), new Vector3(.14f, .17f, .06f), Steel,PrimitiveType.Sphere);
                 Part(leg, "Boot", new Vector3(0, -.72f, .035f), new Vector3(.19f, .18f, .31f), Black);
+                Part(leg,"Boot sole",new Vector3(0,-.793f,.035f),new Vector3(.194f,.025f,.316f),Steel); Combine(leg);
             }
             return root;
         }

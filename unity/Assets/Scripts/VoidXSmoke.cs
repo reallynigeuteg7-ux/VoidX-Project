@@ -31,13 +31,14 @@ namespace VoidX
             Check(Vector3.Distance(start, game.Player.transform.position) > 3, "Movement controller did not move");
             game.LookInput = new Vector2(140, -25); yield return null;
             yield return Capture("gameplay");
+            var canvas = FindFirstObjectByType<Canvas>(); canvas.enabled = false; yield return Capture("hands"); canvas.enabled = true;
             int before = game.Ammo[0]; game.Shoot(); yield return new WaitForSeconds(.2f); Check(game.Ammo[0] == before - 1, "Rifle did not consume ammunition");
-            game.Reload(); Check(game.ReloadLeft > 0, "Reload did not begin"); yield return new WaitForSeconds(1.9f); Check(game.Ammo[0] == 30 && game.Reserve[0] == 179, "Reload ammo transfer incorrect");
+            game.Reload(); Check(game.ReloadLeft > 0, "Reload did not begin"); yield return new WaitForSeconds(.6f); yield return Capture("reload"); yield return new WaitForSeconds(1.2f); Check(game.Ammo[0] == 30 && game.Reserve[0] == 179, "Reload ammo transfer incorrect");
             var head = Array.Find(FindObjectsByType<VoidXGame.Target>(FindObjectsSortMode.None), t => t.head);
             int kills = game.Kills, score = game.Score; Check(head, "No enemy head hitbox");
             for (int i = 0; i < 2 && head && head.gameObject.activeInHierarchy; i++) { Aim(game, head); game.Shoot(); yield return new WaitForSeconds(.2f); }
             Check(game.Kills == kills + 1 && game.Score == score + 150, "Headshots did not eliminate one enemy for 150 points");
-            game.SelectWeapon(1); yield return new WaitForSeconds(.3f);
+            game.SelectWeapon(1); yield return new WaitForSeconds(.3f); yield return Capture("shotgun");
             var body = Array.Find(FindObjectsByType<VoidXGame.Target>(FindObjectsSortMode.None), t => !t.head); kills = game.Kills; score = game.Score; Check(body, "No enemy body hitbox");
             if (body) { Aim(game, body); game.Shoot(); }
             Check(game.Ammo[1] == 7, "Shotgun did not fire"); Check(game.Kills == kills + 1 && game.Score == score + 100, "Shotgun pellets counted a single elimination more than once");
