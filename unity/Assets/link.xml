@@ -1,0 +1,7 @@
+<linker>
+  <!-- CreatePrimitive adds these native components indirectly at runtime. -->
+  <assembly fullname="UnityEngine.PhysicsModule">
+    <type fullname="UnityEngine.CapsuleCollider" preserve="all" />
+    <type fullname="UnityEngine.SphereCollider" preserve="all" />
+  </assembly>
+</linker>

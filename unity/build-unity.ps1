@@ -2,7 +2,7 @@ param(
     [ValidateSet('Validate','Windows','Android')] [string]$Target = 'Android',
     [string]$Editor = 'D:\Unity\6000.3.25f1\Editor\Unity.exe',
     [string]$AndroidTools = 'D:\Unity\Android',
-    [string]$Output = "$PSScriptRoot\Builds\VoidX-0.4.1.apk",
+    [string]$Output = "$PSScriptRoot\Builds\VoidX-0.4.2.apk",
     [string]$Keystore,
     [string]$KeystorePassword = $env:VOIDX_KEYSTORE_PASSWORD,
     [string]$Log = "$PSScriptRoot\Logs\build.log"

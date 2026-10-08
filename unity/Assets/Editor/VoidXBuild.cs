@@ -54,8 +54,8 @@ namespace VoidX
                 if (!found) { int n = included.arraySize; included.InsertArrayElementAtIndex(n); included.GetArrayElementAtIndex(n).objectReferenceValue = shader; }
             }
             graphics.ApplyModifiedPropertiesWithoutUndo();
-            PlayerSettings.companyName = "VoidX"; PlayerSettings.productName = "VoidX"; PlayerSettings.bundleVersion = "0.4.1";
-            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, "com.voidx.game"); PlayerSettings.Android.bundleVersionCode = 5; PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26; PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel35;
+            PlayerSettings.companyName = "VoidX"; PlayerSettings.productName = "VoidX"; PlayerSettings.bundleVersion = "0.4.2";
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, "com.voidx.game"); PlayerSettings.Android.bundleVersionCode = 6; PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26; PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel35;
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft; PlayerSettings.allowedAutorotateToPortrait = false; PlayerSettings.allowedAutorotateToPortraitUpsideDown = false; PlayerSettings.allowedAutorotateToLandscapeLeft = true; PlayerSettings.allowedAutorotateToLandscapeRight = true;
             PlayerSettings.colorSpace = ColorSpace.Linear; PlayerSettings.runInBackground = false; PlayerSettings.defaultScreenWidth = 1280; PlayerSettings.defaultScreenHeight = 720;
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false); PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.OpenGLES3 });
@@ -112,7 +112,7 @@ namespace VoidX
             string key = Environment.GetEnvironmentVariable("VOIDX_KEYSTORE");
             if (string.IsNullOrWhiteSpace(key) || !File.Exists(key)) throw new Exception("Set VOIDX_KEYSTORE to the existing signing key before building an update.");
             PlayerSettings.Android.useCustomKeystore = true; PlayerSettings.Android.keystoreName = key; PlayerSettings.Android.keystorePass = Environment.GetEnvironmentVariable("VOIDX_KEYSTORE_PASSWORD"); PlayerSettings.Android.keyaliasName = "voidx"; PlayerSettings.Android.keyaliasPass = PlayerSettings.Android.keystorePass;
-            string destination = Environment.GetEnvironmentVariable("VOIDX_APK") ?? Path.GetFullPath("Builds/VoidX-0.4.1.apk"); Directory.CreateDirectory(Path.GetDirectoryName(destination));
+            string destination = Environment.GetEnvironmentVariable("VOIDX_APK") ?? Path.GetFullPath("Builds/VoidX-0.4.2.apk"); Directory.CreateDirectory(Path.GetDirectoryName(destination));
             try
             {
                 var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] { ScenePath }, locationPathName = destination, target = BuildTarget.Android, options = BuildOptions.None });

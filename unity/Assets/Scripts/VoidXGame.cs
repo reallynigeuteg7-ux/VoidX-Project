@@ -63,13 +63,14 @@ namespace VoidX
             VoidXWorld.Build();
             var player = new GameObject("Player"); player.layer = 2; Player = player.AddComponent<CharacterController>(); Player.height = 1.75f; Player.radius = .34f; Player.center = new Vector3(0, .9f, 0); Player.stepOffset = .28f; Player.skinWidth = .025f; Player.enabled = false;
             View = new GameObject("FPS camera").AddComponent<Camera>(); View.tag = "MainCamera"; View.transform.SetParent(player.transform, false); View.transform.localPosition = new Vector3(0, 1.65f, 0); View.fieldOfView = 74; View.nearClipPlane = .035f; View.farClipPlane = 130; View.allowHDR = true;
+            View.allowMSAA = !Application.isMobilePlatform;
             var cameraData = View.GetUniversalAdditionalCameraData(); cameraData.renderPostProcessing = false;
             View.gameObject.AddComponent<AudioListener>();
             var volume = new GameObject("Monochrome film grade").AddComponent<UnityEngine.Rendering.Volume>(); volume.isGlobal = true; volume.sharedProfile = Resources.Load<VolumeProfile>("VoidXGrade");
             // A small, separately lit first-person stage renders over the arena; nearby walls cannot cut through hands.
             const int viewLayer = 31; View.cullingMask &= ~(1 << viewLayer);
             var weaponCamera = new GameObject("First person presentation camera").AddComponent<Camera>(); weaponCamera.transform.position = new Vector3(0,-200,0); weaponCamera.cullingMask = 1 << viewLayer;
-            weaponCamera.fieldOfView = View.fieldOfView; weaponCamera.nearClipPlane = .025f; weaponCamera.farClipPlane = 3; weaponCamera.allowHDR = true;
+            weaponCamera.fieldOfView = View.fieldOfView; weaponCamera.nearClipPlane = .025f; weaponCamera.farClipPlane = 3; weaponCamera.allowHDR = true; weaponCamera.allowMSAA = !Application.isMobilePlatform;
             var weaponData = weaponCamera.GetUniversalAdditionalCameraData(); weaponData.renderType = CameraRenderType.Overlay; weaponData.renderPostProcessing = true; weaponData.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing; cameraData.cameraStack.Add(weaponCamera);
             void HandLight(string name,Vector3 at,float intensity) { var light=new GameObject(name).AddComponent<Light>(); light.transform.position=weaponCamera.transform.position+at; light.type=LightType.Point; light.range=2.5f; light.intensity=intensity; light.color=Color.white; light.cullingMask=1<<viewLayer; light.shadows=LightShadows.None; }
             HandLight("Soft glove key",new Vector3(-.5f,.45f,.3f),1.2f); HandLight("Soft glove fill",new Vector3(.5f,.25f,.15f),.5f);
@@ -99,7 +100,9 @@ namespace VoidX
         public void ApplyQuality()
         {
             var pipeline = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
-            if (pipeline) { pipeline.renderScale = Quality == 0 ? .75f : Quality == 2 ? 1 : .9f; pipeline.shadowDistance = Quality == 0 ? 0 : 45; pipeline.msaaSampleCount = Quality == 2 ? 4 : 2; }
+            // GLES camera stacks can have a single-sample backbuffer even when MSAA is requested.
+            // Use the final camera's SMAA on Android so both passes always agree on attachment samples.
+            if (pipeline) { pipeline.renderScale = Quality == 0 ? .75f : Quality == 2 ? 1 : .9f; pipeline.shadowDistance = Quality == 0 ? 0 : 45; pipeline.msaaSampleCount = Application.isMobilePlatform ? 1 : Quality == 2 ? 4 : 2; }
             if (View) View.GetUniversalAdditionalCameraData().renderPostProcessing = false;
         }
         void ResetInput() { MoveInput = LookInput = Vector2.zero; FireInput = false; UI?.ClearInput(); }
