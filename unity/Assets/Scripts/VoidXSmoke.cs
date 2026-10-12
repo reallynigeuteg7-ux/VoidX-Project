@@ -47,8 +47,37 @@ namespace VoidX
             game.Pause(); float elapsed = game.Elapsed; yield return new WaitForSeconds(.3f); Check(game.Elapsed == elapsed && game.State == VoidXGame.Mode.Paused, "Pause did not freeze simulation"); yield return Capture("pause");
             game.Resume(); yield return new WaitForSeconds(.15f); Check(game.Elapsed > elapsed, "Resume did not advance simulation");
             game.Menu(); yield return null; Check(game.State == VoidXGame.Mode.Menu && FindObjectsByType<VoidXGame.Target>(FindObjectsSortMode.None).Length == 0, "Quit did not clean actors");
-            File.WriteAllText(Path.Combine(folder, "result.txt"), errors.Count == 0 ? "PASS: native menu, settings, arsenal, start, movement, rifle, headshots, shotgun single-kill scoring, reload, pause, resume, quit; no runtime errors." : "FAIL\n" + string.Join("\n", errors));
+            yield return CompleteWaves(game);
+            File.WriteAllText(Path.Combine(folder, "result.txt"), errors.Count == 0 ? "PASS: native menu, settings, arsenal, start, movement, rifle, headshots, shotgun single-kill scoring, reload, pause, resume, quit, unobstructed spawns, all five waves and victory; no runtime errors." : "FAIL\n" + string.Join("\n", errors));
             Application.Quit(errors.Count == 0 ? 0 : 1);
+        }
+        IEnumerator CompleteWaves(VoidXGame game)
+        {
+            foreach (var point in VoidXGame.SpawnPoints) Check(!VoidXGame.Blocked(point, .48f, VoidXWorld.Covers), "Configured spawn is inside cover: " + point);
+            game.StartGame(); int[] killsByWave = new int[6]; int previousWave = 1;
+            float deadline = Time.realtimeSinceStartup + 120;
+            while (game.State == VoidXGame.Mode.Playing && Time.realtimeSinceStartup < deadline)
+            {
+                if (game.Wave != previousWave)
+                {
+                    Check(game.Wave == previousWave + 1, "Wave skipped or restarted");
+                    Check(killsByWave[previousWave] == 2 + previousWave * 2, "Wave advanced before every scheduled enemy was eliminated");
+                    Check(game.Reserve[0] == 180 + (game.Wave - 1) * 60 && game.Reserve[1] == 48 + (game.Wave - 1) * 12, "Intermission supplies granted more than once or missing");
+                    previousWave = game.Wave;
+                }
+                foreach (var target in FindObjectsByType<VoidXGame.Target>(FindObjectsSortMode.None))
+                {
+                    if (target.head || !target.gameObject.activeInHierarchy) continue;
+                    Check(!VoidXGame.Blocked(target.transform.parent.position, .42f, VoidXWorld.Covers), "Live enemy is trapped in cover");
+                    int beforeKills = game.Kills; target.Hit(int.MaxValue, false);
+                    killsByWave[game.Wave] += game.Kills - beforeKills;
+                }
+                yield return null;
+            }
+            Check(game.State == VoidXGame.Mode.Result && game.Wave == 5 && game.ResultTitle == "СЕКТОР ЧИСТ.", "Five-wave run did not reach victory before timeout");
+            Check(game.Kills == 40 && game.Score == 5000, "Full run enemy count or victory score incorrect");
+            for (int wave = 1; wave <= 5; wave++) Check(killsByWave[wave] == 2 + wave * 2, "Wrong enemy count in wave " + wave);
+            yield return Capture("victory"); game.Menu(); yield return null;
         }
         static void Aim(VoidXGame game, VoidXGame.Target target) { target.transform.parent.position = game.Player.transform.position + game.Player.transform.forward * 4; Physics.SyncTransforms(); game.View.transform.LookAt(target.transform.position); }
         void Click(string label) { foreach (var b in FindObjectsByType<Button>(FindObjectsSortMode.None)) if (b.name == label && b.gameObject.activeInHierarchy) { b.onClick.Invoke(); return; } errors.Add("Missing button: " + label); }

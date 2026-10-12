@@ -44,7 +44,7 @@ namespace VoidX
         readonly List<Bullet> bullets = new();
         readonly List<Pickup> pickups = new();
         readonly List<Effect> effects = new();
-        readonly Vector3[] spawns = { new(-16, 0, -18), new(0, 0, -20), new(17, 0, -17), new(-21, 0, -7), new(21, 0, -6), new(-20, 0, 11), new(20, 0, 12), new(0, 0, 21) };
+        internal static readonly Vector3[] SpawnPoints = { new(-21, 0, -18), new(0, 0, -20), new(21, 0, -17), new(-21, 0, -7), new(21, 0, -6), new(-20, 0, 11), new(20, 0, 12), new(0, 0, 21) };
         sealed class Operative { public Transform root; public Transform[] legs; public int hp; public float phase, shoot; }
         sealed class Bullet { public Transform root; public Vector3 velocity; public float life; }
         sealed class Pickup { public Transform root; }
@@ -136,8 +136,17 @@ namespace VoidX
         void StartWave() { Wave++; toSpawn = 2 + Wave * 2; spawnTime = .3f; between = 0; Notice = "ВОЛНА 0" + Wave; NoticeLeft = 3; }
         void Spawn()
         {
-            Vector3 at = spawns[0]; float best = -1;
-            foreach (var point in spawns) { float distance = Vector3.Distance(point, Player.transform.position); if (distance < 12) continue; bool crowded = enemies.Exists(e => Vector3.Distance(e.root.position, point) < 2); float value = distance + UnityEngine.Random.value * 25 - (crowded ? 100 : 0); if (value > best) { best = value; at = point; } }
+            Vector3 at = Vector3.zero; float best = float.NegativeInfinity;
+            foreach (var point in SpawnPoints)
+            {
+                // An operative born inside solid cover cannot move out or be hit, blocking the entire wave.
+                if (Blocked(point, .48f, VoidXWorld.Covers)) continue;
+                float distance = Vector3.Distance(point, Player.transform.position);
+                bool crowded = enemies.Exists(e => Vector3.Distance(e.root.position, point) < 2);
+                float value = distance + UnityEngine.Random.value * 25 - (crowded ? 100 : 0) - (distance < 12 ? 100 : 0);
+                if (value > best) { best = value; at = point; }
+            }
+            if (float.IsNegativeInfinity(best)) return; // Keep the pending spawn queued until a valid position is available.
             var enemy = new Operative { hp = 65 + Wave * 8, phase = UnityEngine.Random.value * 6, shoot = 1.7f + UnityEngine.Random.value * 1.8f };
             enemy.root = VoidXWorld.Operative(null, out enemy.legs); enemy.root.position = at;
             AddTarget(enemy, new Vector3(0, .9f, 0), new Vector3(.65f, 1.1f, .5f), false); AddTarget(enemy, new Vector3(0, 1.62f, 0), new Vector3(.34f, .31f, .34f), true);
