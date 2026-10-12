@@ -38,12 +38,17 @@ namespace VoidX
                 var pipelineSettings = new SerializedObject(pipeline); pipelineSettings.FindProperty("m_MainLightShadowsSupported").boolValue = true; pipelineSettings.FindProperty("m_AdditionalLightShadowsSupported").boolValue = false; pipelineSettings.ApplyModifiedPropertiesWithoutUndo();
                 AssetDatabase.CreateAsset(pipeline, "Assets/Settings/VoidXURP.asset");
             }
+            var lightingSettings = new SerializedObject(pipeline);
+            lightingSettings.FindProperty("m_SoftShadowsSupported").boolValue = true;
+            lightingSettings.FindProperty("m_ReflectionProbeBoxProjection").boolValue = true;
+            lightingSettings.ApplyModifiedPropertiesWithoutUndo(); EditorUtility.SetDirty(pipeline);
             GraphicsSettings.defaultRenderPipeline = pipeline; QualitySettings.renderPipeline = pipeline; QualitySettings.vSyncCount = 0;
             // Materials in Resources preserve just the variants used by runtime geometry.
             CreateMaterial("VoidXLit", "Universal Render Pipeline/Lit", false);
             CreateMaterial("VoidXGlow", "Universal Render Pipeline/Lit", true);
             CreateMaterial("VoidXParticles", "Universal Render Pipeline/Particles/Unlit", false);
             CreateMaterial("VoidXEmblem", "VoidX/Emblem", false);
+            CreateMaterial("VoidXInk", "VoidX/Ink", false);
             CreateGrade();
             var graphics = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/GraphicsSettings.asset")[0]); var included = graphics.FindProperty("m_AlwaysIncludedShaders");
             for (int i = included.arraySize - 1; i >= 0; i--) if (included.GetArrayElementAtIndex(i).objectReferenceValue is Shader s && s.name == "GUI/Text Shader") { included.GetArrayElementAtIndex(i).objectReferenceValue = null; included.DeleteArrayElementAtIndex(i); }
@@ -54,8 +59,8 @@ namespace VoidX
                 if (!found) { int n = included.arraySize; included.InsertArrayElementAtIndex(n); included.GetArrayElementAtIndex(n).objectReferenceValue = shader; }
             }
             graphics.ApplyModifiedPropertiesWithoutUndo();
-            PlayerSettings.companyName = "VoidX"; PlayerSettings.productName = "VoidX"; PlayerSettings.bundleVersion = "0.4.2";
-            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, "com.voidx.game"); PlayerSettings.Android.bundleVersionCode = 6; PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26; PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel35;
+            PlayerSettings.companyName = "VoidX"; PlayerSettings.productName = "VoidX"; PlayerSettings.bundleVersion = "0.5.0";
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, "com.voidx.game"); PlayerSettings.Android.bundleVersionCode = 7; PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26; PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel35;
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft; PlayerSettings.allowedAutorotateToPortrait = false; PlayerSettings.allowedAutorotateToPortraitUpsideDown = false; PlayerSettings.allowedAutorotateToLandscapeLeft = true; PlayerSettings.allowedAutorotateToLandscapeRight = true;
             PlayerSettings.colorSpace = ColorSpace.Linear; PlayerSettings.runInBackground = false; PlayerSettings.defaultScreenWidth = 1280; PlayerSettings.defaultScreenHeight = 720;
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false); PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.OpenGLES3 });
@@ -77,13 +82,19 @@ namespace VoidX
         }
         static void CreateGrade()
         {
-            const string path = "Assets/Resources/VoidXGrade.asset"; if (AssetDatabase.LoadAssetAtPath<VolumeProfile>(path)) return;
-            var profile = ScriptableObject.CreateInstance<VolumeProfile>(); AssetDatabase.CreateAsset(profile, path);
-            var colors = profile.Add<ColorAdjustments>(true); colors.saturation.Override(-100); colors.contrast.Override(16); colors.postExposure.Override(.25f);
-            var tone = profile.Add<Tonemapping>(true); tone.mode.Override(TonemappingMode.ACES);
-            var bloom = profile.Add<Bloom>(true); bloom.intensity.Override(.14f); bloom.threshold.Override(1.2f); bloom.scatter.Override(.6f);
-            var vignette = profile.Add<Vignette>(true); vignette.intensity.Override(.22f); vignette.smoothness.Override(.5f);
-            foreach (var component in profile.components) AssetDatabase.AddObjectToAsset(component, profile); EditorUtility.SetDirty(profile);
+            const string path = "Assets/Resources/VoidXGrade.asset";
+            var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(path);
+            if (!profile) { profile = ScriptableObject.CreateInstance<VolumeProfile>(); AssetDatabase.CreateAsset(profile, path); }
+            T Grade<T>() where T : VolumeComponent, new()
+            {
+                if (profile.TryGet<T>(out var c)) return c;
+                c=profile.Add<T>(true); AssetDatabase.AddObjectToAsset(c,profile); return c;
+            }
+            var colors = Grade<ColorAdjustments>(); colors.saturation.Override(-100); colors.contrast.Override(8); colors.postExposure.Override(0);
+            var tone = Grade<Tonemapping>(); tone.mode.Override(TonemappingMode.ACES);
+            var bloom = Grade<Bloom>(); bloom.intensity.Override(.24f); bloom.threshold.Override(1.05f); bloom.scatter.Override(.45f);
+            var vignette = Grade<Vignette>(); vignette.intensity.Override(.07f); vignette.smoothness.Override(.65f);
+            foreach (var component in profile.components) EditorUtility.SetDirty(component); EditorUtility.SetDirty(profile);
         }
         static void CreateMaterial(string name, string shaderName, bool emission)
         {
@@ -112,7 +123,7 @@ namespace VoidX
             string key = Environment.GetEnvironmentVariable("VOIDX_KEYSTORE");
             if (string.IsNullOrWhiteSpace(key) || !File.Exists(key)) throw new Exception("Set VOIDX_KEYSTORE to the existing signing key before building an update.");
             PlayerSettings.Android.useCustomKeystore = true; PlayerSettings.Android.keystoreName = key; PlayerSettings.Android.keystorePass = Environment.GetEnvironmentVariable("VOIDX_KEYSTORE_PASSWORD"); PlayerSettings.Android.keyaliasName = "voidx"; PlayerSettings.Android.keyaliasPass = PlayerSettings.Android.keystorePass;
-            string destination = Environment.GetEnvironmentVariable("VOIDX_APK") ?? Path.GetFullPath("Builds/VoidX-0.4.2.apk"); Directory.CreateDirectory(Path.GetDirectoryName(destination));
+            string destination = Environment.GetEnvironmentVariable("VOIDX_APK") ?? Path.GetFullPath("Builds/VoidX-0.5.0.apk"); Directory.CreateDirectory(Path.GetDirectoryName(destination));
             try
             {
                 var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = new[] { ScenePath }, locationPathName = destination, target = BuildTarget.Android, options = BuildOptions.None });

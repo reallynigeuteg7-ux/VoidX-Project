@@ -24,11 +24,16 @@ namespace VoidX
             var colors = new Color[n * n];
             float Height(float x, float y)
             {
-                float broad = Mathf.PerlinNoise(x * .048f + kind * 10, y * .048f);
-                float grain = Mathf.PerlinNoise(x * .51f + 8, y * .51f);
-                float g = .65f + (broad - .5f) * .16f + (grain - .5f) * .045f;
-                if (kind == 1) g -= Mathf.Pow(Mathf.Abs(Mathf.Sin(x * .31f + y * .012f)), 28) * .07f;
-                if (kind == 2) { g -= Mathf.Pow(Mathf.Abs(Mathf.Sin(x * .025f)), 60) * .16f; g -= Mathf.Pow(Mathf.Abs(Mathf.Sin(y * .025f)), 60) * .16f; }
+                float broad = Mathf.PerlinNoise(x * .013f + kind * 10, y * .013f);
+                float grain = Mathf.PerlinNoise(x * .73f + 8, y * .73f);
+                float g = .78f + (broad - .5f) * .13f + (grain - .5f) * .032f;
+                if (kind == 1) g -= Mathf.Pow(Mathf.Abs(Mathf.Sin(x * .53f + y * .008f)), 28) * .028f;
+                if (kind == 2)
+                {
+                    float veins=Mathf.Abs(Mathf.PerlinNoise(x*.034f+19,y*.034f+7)-.49f);
+                    g -= (1-Mathf.SmoothStep(0,1,Mathf.InverseLerp(.005f,.014f,veins)))*.11f;
+                    g += (Mathf.PerlinNoise(x*.11f,y*.11f)-.5f)*.04f;
+                }
                 return g;
             }
             for (int y = 0; y < n; y++) for (int x = 0; x < n; x++)
@@ -40,11 +45,9 @@ namespace VoidX
         }
         static Material Mat(string name, float shade, float metal, float smooth, int kind = 0)
         {
-            var template = Resources.Load<Material>("VoidXLit");
-            var mat = template ? new Material(template) : new Material(Shader.Find("Universal Render Pipeline/Lit")); mat.name = name; mat.enableInstancing = true;
-            mat.SetColor("_BaseColor", Grey(shade)); mat.SetFloat("_Metallic", metal); mat.SetFloat("_Smoothness", smooth);
-            mat.SetTexture("_BaseMap", Surface(kind)); mat.SetTexture("_BumpMap", Surface(kind, true)); mat.EnableKeyword("_NORMALMAP"); mat.SetFloat("_BumpScale", .22f);
-            return mat;
+            var material=VoidXInk.Material(name, kind == 2 ? .65f : kind == 0 ? .18f : .035f);
+            if(name=="Ivory paint")material.SetColor("_BaseColor",Color.white*1.1f);
+            return material;
         }
         public static GameObject Part(Transform parent, string name, Vector3 pos, Vector3 size, Material mat, PrimitiveType type = PrimitiveType.Cube, bool collider = false)
         {
@@ -109,9 +112,9 @@ namespace VoidX
             Concrete = Mat("Weathered concrete", .82f, .02f, .12f);
             Steel = Mat("Brushed gunmetal", .46f, .78f, .58f, 1);
             Black = Mat("Carbon / oxidised steel", .12f, .25f, .24f, 1);
-            White = Mat("Ivory paint", 1.45f, .25f, .3f);
-            Floor = Mat("Cracked industrial floor", .59f, .12f, .37f, 2);
-            Glass = Mat("Dark glazing", .095f, .85f, .93f);
+            White = Mat("Ivory paint", .88f, .05f, .3f);
+            Floor = Mat("Weathered asphalt", .43f, .04f, .25f, 2);
+            Glass = Mat("Smoked industrial glazing", .22f, .55f, .82f);
             Glow = new Material(Resources.Load<Material>("VoidXGlow")); Glow.name = "Strip light"; Glow.SetColor("_EmissionColor", Grey(5)); Glow.EnableKeyword("_EMISSION");
             var root = new GameObject("SECTOR 07 · INDUSTRIAL COURTYARD").transform;
             Part(root, "Ground collision", new Vector3(0, -.2f, 0), new Vector3(60, .4f, 60), Floor, PrimitiveType.Cube, true);
@@ -182,6 +185,19 @@ namespace VoidX
             }
             Sign(root, "07", new Vector3(0, 6.4f, -23.6f), 2.3f);
             Sign(root, "VOID SECTOR", new Vector3(-12, 3.7f, -23.7f), .55f);
+            // A roof, wire skylight and strip lights turn the courtyard into the reference's enclosed hangar.
+            foreach(int side in new[]{-1,1})
+            {
+                Box(root,new Vector3(side*15.5f,10.2f,0),new Vector3(19,.25f,50),Black);
+                for(int z=-20;z<=20;z+=8)
+                {
+                    Box(root,new Vector3(side*12,9.85f,z),new Vector3(.26f,.09f,4),Glow);
+                    Box(root,new Vector3(side*12,9.95f,z),new Vector3(.8f,.2f,4.4f),Steel);
+                }
+            }
+            for(int z=-24;z<=24;z+=6)Box(root,new Vector3(0,10,z),new Vector3(49,.15f,.15f),Steel);
+            for(int x=-6;x<=6;x++)Box(root,new Vector3(x,10.15f,0),new Vector3(.025f,.025f,50),White);
+            for(int z=-25;z<=25;z++)Box(root,new Vector3(0,10.15f,z),new Vector3(12,.025f,.025f),White);
             Combine(root);
             SetupLight();
             return root;
@@ -198,7 +214,7 @@ namespace VoidX
             foreach (var f in root.GetComponentsInChildren<MeshFilter>())
             {
                 if (f.GetComponent<TextMesh>()) continue;
-                var r = f.GetComponent<MeshRenderer>(); if (!r) continue;
+                var r = f.GetComponent<MeshRenderer>(); if (!r || !r.enabled) continue;
                 if (!groups.TryGetValue(r.sharedMaterial, out var list)) groups[r.sharedMaterial] = list = new();
                 var geometry = f.sharedMesh;
                 if (world)
@@ -213,18 +229,15 @@ namespace VoidX
             {
                 var o = new GameObject("Batched " + pair.Key.name); o.transform.SetParent(root, false);
                 var m = new Mesh { name = o.name, indexFormat = IndexFormat.UInt32 }; m.CombineMeshes(pair.Value.ToArray(), true, true);
+                if(pair.Key.shader.name=="VoidX/Ink") {bool soft=pair.Key.name.Contains("twill")||pair.Key.name.Contains("leather");var outlined=VoidXInk.Contours(m,soft);UnityEngine.Object.Destroy(m);m=outlined;}
                 o.AddComponent<MeshFilter>().sharedMesh = m; o.AddComponent<MeshRenderer>().sharedMaterial = pair.Key; o.AddComponent<VoidXRuntimeMesh>().Owned = m; o.isStatic = world;
                 if (world) foreach (var item in pair.Value) UnityEngine.Object.Destroy(item.mesh);
             }
         }
         static void SetupLight()
         {
-            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.ExponentialSquared; RenderSettings.fogDensity = .012f; RenderSettings.fogColor = Grey(.5f);
-            RenderSettings.ambientMode = AmbientMode.Trilight; RenderSettings.ambientSkyColor = Grey(.68f); RenderSettings.ambientEquatorColor = Grey(.35f); RenderSettings.ambientGroundColor = Grey(.12f); RenderSettings.ambientIntensity = 1;
-            var sun = new GameObject("Cloud-filtered sunlight").AddComponent<Light>(); sun.type = LightType.Directional; sun.color = Color.white; sun.intensity = 1.8f; sun.transform.rotation = Quaternion.Euler(35, -32, 0); sun.shadows = LightShadows.Soft; sun.shadowBias = .035f; sun.shadowNormalBias = .28f;
-            var light = new GameObject("Door light").AddComponent<Light>(); light.type = LightType.Point; light.color = Color.white; light.intensity = 3; light.range = 10; light.transform.position = new Vector3(0, 4.8f, -22);
-            var sky = new Material(Shader.Find("Skybox/Procedural")); sky.SetFloat("_AtmosphereThickness", .7f); sky.SetColor("_SkyTint", Grey(.47f)); sky.SetColor("_GroundColor", Grey(.17f)); sky.SetFloat("_Exposure", 1.1f); RenderSettings.skybox = sky;
-            var reflection = new GameObject("Courtyard reflections").AddComponent<ReflectionProbe>(); reflection.transform.position = new Vector3(0, 3, 0); reflection.mode = ReflectionProbeMode.Realtime; reflection.refreshMode = ReflectionProbeRefreshMode.OnAwake; reflection.timeSlicingMode = ReflectionProbeTimeSlicingMode.AllFacesAtOnce; reflection.resolution = 128; reflection.size = new Vector3(60, 20, 60); reflection.boxProjection = true; reflection.intensity = .8f;
+            RenderSettings.fog=true; RenderSettings.fogMode=FogMode.ExponentialSquared; RenderSettings.fogDensity=.008f; RenderSettings.fogColor=Color.black;
+            RenderSettings.skybox=null; RenderSettings.ambientMode=AmbientMode.Flat; RenderSettings.ambientLight=Color.white*.15f;
             var dust = new GameObject("Drifting dust").AddComponent<ParticleSystem>(); dust.transform.position = new Vector3(0, 6, 0);
             var main = dust.main; main.startLifetime = 18; main.startSpeed = .035f; main.startSize = .026f; main.startColor = new Color(.8f, .8f, .8f, .28f); main.maxParticles = 180; main.simulationSpace = ParticleSystemSimulationSpace.World;
             var emission = dust.emission; emission.rateOverTime = 8;

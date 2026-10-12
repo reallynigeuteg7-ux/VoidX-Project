@@ -38,7 +38,9 @@ namespace VoidX
             int kills = game.Kills, score = game.Score; Check(head, "No enemy head hitbox");
             for (int i = 0; i < 2 && head && head.gameObject.activeInHierarchy; i++) { Aim(game, head); game.Shoot(); yield return new WaitForSeconds(.2f); }
             Check(game.Kills == kills + 1 && game.Score == score + 150, "Headshots did not eliminate one enemy for 150 points");
-            game.SelectWeapon(1); yield return new WaitForSeconds(.3f); yield return Capture("shotgun");
+            game.SelectWeapon(1); yield return new WaitForSeconds(.5f);
+            Check(GameObject.Find("VX—08 Shotgun") && !GameObject.Find("VX—01 Assault Rifle"), "Weapon visibility did not switch to shotgun");
+            yield return Capture("shotgun");
             var body = Array.Find(FindObjectsByType<VoidXGame.Target>(FindObjectsSortMode.None), t => !t.head); kills = game.Kills; score = game.Score; Check(body, "No enemy body hitbox");
             if (body) { Aim(game, body); game.Shoot(); }
             Check(game.Ammo[1] == 7, "Shotgun did not fire"); Check(game.Kills == kills + 1 && game.Score == score + 100, "Shotgun pellets counted a single elimination more than once");

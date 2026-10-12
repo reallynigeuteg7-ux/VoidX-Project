@@ -25,21 +25,7 @@ namespace VoidX
 
         static Material Surface(string name, float shade, float metal, float gloss, bool woven)
         {
-            var m = new Material(Resources.Load<Material>("VoidXLit")) { name = name, enableInstancing = true };
-            m.SetColor("_BaseColor", new Color(shade, shade, shade)); m.SetFloat("_Metallic", metal); m.SetFloat("_Smoothness", gloss);
-            const int n = 128; var diffuse = new Texture2D(n, n, TextureFormat.RGBA32, true); var normal = new Texture2D(n, n, TextureFormat.RGBA32, true, true);
-            var d = new Color[n * n]; var b = new Color[n * n];
-            float Height(int x, int y) => woven ? Mathf.Sin(x * Mathf.PI / 2) * Mathf.Sin(y * Mathf.PI / 2) * .07f : Mathf.PerlinNoise(x * .42f, y * .42f) * .055f;
-            for (int y = 0; y < n; y++) for (int x = 0; x < n; x++)
-            {
-                float v = .93f + Height(x, y) * .32f; d[y * n + x] = new Color(v, v, v, 1);
-                var v3 = new Vector3(Height(x - 1, y) - Height(x + 1, y), Height(x, y - 1) - Height(x, y + 1), 1).normalized;
-                // Alpha 1 preserves the red channel in URP's desktop RG/AG unpacker; Android uses RGB.
-                b[y * n + x] = new Color(v3.x * .5f + .5f, v3.y * .5f + .5f, v3.z * .5f + .5f, 1);
-            }
-            diffuse.name = name + " grain"; normal.name = name + " normal"; diffuse.wrapMode = normal.wrapMode = TextureWrapMode.Repeat; diffuse.anisoLevel = normal.anisoLevel = 4;
-            diffuse.SetPixels(d); diffuse.Apply(true, true); normal.SetPixels(b); normal.Apply(true, true);
-            m.SetTexture("_BaseMap", diffuse); m.SetTexture("_BumpMap", normal); m.SetFloat("_BumpScale", .32f); m.EnableKeyword("_NORMALMAP"); return m;
+            return VoidXInk.Material(name, 0, true);
         }
 
         // Elliptical cross-sections along a smooth Hermite path, with true length rather than stretched primitives.
@@ -103,43 +89,33 @@ namespace VoidX
 
         static Transform Arms(Transform root, bool shotgun)
         {
-            float z = shotgun ? .055f : 0;
-            var support = new GameObject("Support hand and sleeve").transform; support.SetParent(root, false); support.localPosition = new Vector3(-.018f, -.008f, z);
-            Loft(support, "Tailored support sleeve", new[] { new Vector3(-.51f,-.42f,-.25f),new Vector3(-.36f,-.31f,-.08f),new Vector3(-.205f,-.20f,.085f),new Vector3(-.103f,-.103f,.214f) },
-                new[] {new Vector2(.082f,.085f),new Vector2(.077f,.083f),new Vector2(.063f,.066f),new Vector2(.040f,.039f)}, fabric, Vector3.up, 24, 7, .065f);
-            Loft(support, "Support wrist cuff", new[] {new Vector3(-.127f,-.126f,.179f),new Vector3(-.105f,-.104f,.214f),new Vector3(-.090f,-.087f,.234f)},
-                new[] {new Vector2(.043f,.043f),new Vector2(.040f,.040f),new Vector2(.035f,.034f)}, rubber, Vector3.up, 20, 4);
-            Loft(support, "Support glove palm", new[] {new Vector3(-.095f,-.089f,.216f),new Vector3(-.077f,-.061f,.256f),new Vector3(-.076f,-.049f,.303f),new Vector3(-.072f,-.046f,.341f)},
-                new[] {new Vector2(.033f,.033f),new Vector2(.030f,.044f),new Vector2(.028f,.043f),new Vector2(.012f,.028f)}, leather, Vector3.up, 24, 5);
-            Ellipsoid(support, "Support backhand padding", new Vector3(-.102f,-.049f,.292f),new Vector3(.024f,.070f,.082f), rubber,new Vector3(0,-8,8));
-            for (int f = 0; f < 4; f++)
+            // Restore the compact, bent support arm and padded gloves from the 0.2 viewmodel.
+            var support = new GameObject("Classic support arm").transform; support.SetParent(root, false);
+            support.localPosition = new Vector3(0, 0, shotgun ? .025f : 0);
+            Loft(support, "Bent support sleeve", new[] {new Vector3(-.13f,-.38f,-.30f),new Vector3(-.17f,-.29f,.05f),new Vector3(-.10f,-.18f,.21f),new Vector3(-.047f,-.105f,.305f)},
+                new[] {new Vector2(.100f,.100f),new Vector2(.089f,.087f),new Vector2(.079f,.077f),new Vector2(.061f,.060f)},fabric,Vector3.up,24,7,.035f);
+            Loft(support,"Wide support cuff",new[] {new Vector3(-.064f,-.133f,.270f),new Vector3(-.046f,-.105f,.305f),new Vector3(-.038f,-.085f,.326f)},
+                new[] {new Vector2(.065f,.062f),new Vector2(.060f,.058f),new Vector2(.052f,.050f)},rubber,Vector3.up,24,4);
+            Ellipsoid(support,"Classic padded support glove",new Vector3(-.036f,-.067f,.342f),new Vector3(.126f,.102f,.151f),leather,new Vector3(-16,0,-8));
+            Ellipsoid(support,"Support glove back pad",new Vector3(-.087f,-.058f,.337f),new Vector3(.034f,.069f,.098f),rubber,new Vector3(-12,0,-8));
+            for(int f=0;f<4;f++)
             {
-                float at = .252f + f * .025f, radius = f == 3 ? .0095f : .0115f;
-                Finger(support, "Support finger " + f, new[] {new Vector3(-.074f,-.035f,at),new Vector3(-.072f,-.075f,at+.003f),new Vector3(-.023f,-.094f,at+.005f),new Vector3(.027f,-.072f,at+.008f),new Vector3(.034f,-.042f,at+.010f)},radius);
-                Ellipsoid(support, "Support knuckle guard",new Vector3(-.086f,-.044f,at),new Vector3(.018f,.024f,.018f),rubber);
+                float z=.288f+f*.028f;
+                Ellipsoid(support,"Wrapped support finger",new Vector3(.005f,-.073f,z),new Vector3(.102f,.038f,.026f),leather,new Vector3(0,0,-12));
             }
-            Finger(support, "Opposed support thumb",new[] {new Vector3(-.086f,-.041f,.262f),new Vector3(-.074f,-.005f,.275f),new Vector3(-.043f,.032f,.291f),new Vector3(-.014f,.034f,.302f)},.014f);
-            Stitch(support,new Vector3(-.113f,-.051f,.254f),new Vector3(-.103f,-.020f,.322f));
+            Ellipsoid(support,"Support thumb",new Vector3(-.071f,-.003f,.316f),new Vector3(.031f,.047f,.093f),leather,new Vector3(-20,-20,-20));
             VoidXWorld.Combine(support);
-            var firing = new GameObject("Firing hand and sleeve").transform; firing.SetParent(root,false); root = firing;
-            Loft(root, "Tailored firing sleeve",new[] {new Vector3(.48f,-.40f,-.30f),new Vector3(.31f,-.31f,-.25f),new Vector3(.185f,-.223f,-.191f),new Vector3(.093f,-.174f,-.128f)},
-                new[] {new Vector2(.088f,.085f),new Vector2(.077f,.075f),new Vector2(.058f,.059f),new Vector2(.038f,.035f)},fabric,Vector3.up,24,7,.065f);
-            Loft(root,"Firing wrist cuff",new[] {new Vector3(.123f,-.193f,-.153f),new Vector3(.093f,-.174f,-.128f),new Vector3(.074f,-.158f,-.109f)},
-                new[] {new Vector2(.043f,.040f),new Vector2(.039f,.038f),new Vector2(.033f,.033f)},rubber,Vector3.forward,20,4);
-            Loft(root,"Firing glove palm",new[] {new Vector3(.085f,-.168f,-.121f),new Vector3(.057f,-.147f,-.084f),new Vector3(.048f,-.108f,-.072f),new Vector3(.040f,-.076f,-.062f)},
-                new[] {new Vector2(.033f,.030f),new Vector2(.035f,.044f),new Vector2(.027f,.043f),new Vector2(.016f,.032f)},leather,Vector3.forward,24,5);
-            Ellipsoid(root,"Firing backhand padding",new Vector3(.073f,-.114f,-.066f),new Vector3(.022f,.067f,.062f),rubber,new Vector3(-12,0,12));
-            for(int f=0;f<3;f++)
-            {
-                float y=-.105f-f*.025f; Finger(root,"Firing curled finger "+f,new[] {new Vector3(.059f,y,-.068f),new Vector3(.060f,y,-.021f),new Vector3(.029f,y,.007f),new Vector3(-.015f,y,-.015f),new Vector3(-.025f,y,-.040f)},f==2?.010f:.012f);
-                Ellipsoid(root,"Firing knuckle guard",new Vector3(.066f,y,-.027f),new Vector3(.018f,.019f,.023f),rubber);
-            }
-            Finger(root,"Trigger index finger",new[] {new Vector3(.051f,-.074f,-.066f),new Vector3(.054f,-.071f,-.012f),new Vector3(.032f,-.068f,.012f),new Vector3(.009f,-.069f,.003f)},.011f);
-            Finger(root,"Opposed firing thumb",new[] {new Vector3(.039f,-.074f,-.092f),new Vector3(.010f,-.046f,-.101f),new Vector3(-.028f,-.039f,-.078f),new Vector3(-.036f,-.061f,-.040f)},.013f);
-            Stitch(root,new Vector3(.085f,-.145f,-.095f),new Vector3(.075f,-.085f,-.079f));
+            var firing=new GameObject("Classic firing arm").transform; firing.SetParent(root,false);
+            Loft(firing,"Short firing sleeve",new[] {new Vector3(.16f,-.36f,-.31f),new Vector3(.104f,-.25f,-.215f),new Vector3(.043f,-.169f,-.118f)},
+                new[] {new Vector2(.085f,.086f),new Vector2(.077f,.075f),new Vector2(.060f,.061f)},fabric,Vector3.up,24,6,.035f);
+            Loft(firing,"Firing cuff",new[] {new Vector3(.063f,-.194f,-.147f),new Vector3(.041f,-.17f,-.113f)},new[] {new Vector2(.064f,.063f),new Vector2(.057f,.057f)},rubber,Vector3.up,24,3);
+            Ellipsoid(firing,"Classic firing glove",new Vector3(.034f,-.145f,-.071f),new Vector3(.118f,.158f,.125f),leather,new Vector3(-14,0,-8));
+            Ellipsoid(firing,"Firing knuckle padding",new Vector3(.085f,-.132f,-.060f),new Vector3(.029f,.104f,.073f),rubber,new Vector3(-14,0,-8));
+            for(int f=0;f<3;f++) Ellipsoid(firing,"Firing grip finger",new Vector3(.021f,-.116f-f*.027f,-.014f),new Vector3(.105f,.025f,.043f),leather,new Vector3(-14,0,0));
+            Ellipsoid(firing,"Trigger finger",new Vector3(.039f,-.074f,-.018f),new Vector3(.027f,.027f,.084f),leather,new Vector3(0,-24,0));
+            Ellipsoid(firing,"Firing thumb",new Vector3(-.019f,-.070f,-.080f),new Vector3(.028f,.039f,.093f),leather,new Vector3(-22,16,0));
             VoidXWorld.Combine(firing); return support;
         }
-
         // Convex side profile with bevels, separate face normals and clean machined highlights.
         public static GameObject Shell(Transform parent, string name, Vector3 position, Vector2[] profile, float width, float bevel, Material material)
         {

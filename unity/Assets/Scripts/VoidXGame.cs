@@ -64,6 +64,7 @@ namespace VoidX
             var player = new GameObject("Player"); player.layer = 2; Player = player.AddComponent<CharacterController>(); Player.height = 1.75f; Player.radius = .34f; Player.center = new Vector3(0, .9f, 0); Player.stepOffset = .28f; Player.skinWidth = .025f; Player.enabled = false;
             View = new GameObject("FPS camera").AddComponent<Camera>(); View.tag = "MainCamera"; View.transform.SetParent(player.transform, false); View.transform.localPosition = new Vector3(0, 1.65f, 0); View.fieldOfView = 74; View.nearClipPlane = .035f; View.farClipPlane = 130; View.allowHDR = true;
             View.allowMSAA = !Application.isMobilePlatform;
+            View.clearFlags=CameraClearFlags.SolidColor; View.backgroundColor=Color.black;
             var cameraData = View.GetUniversalAdditionalCameraData(); cameraData.renderPostProcessing = false;
             View.gameObject.AddComponent<AudioListener>();
             var volume = new GameObject("Monochrome film grade").AddComponent<UnityEngine.Rendering.Volume>(); volume.isGlobal = true; volume.sharedProfile = Resources.Load<VolumeProfile>("VoidXGrade");
@@ -76,7 +77,7 @@ namespace VoidX
             HandLight("Soft glove key",new Vector3(-.5f,.45f,.3f),1.2f); HandLight("Soft glove fill",new Vector3(.5f,.25f,.15f),.5f);
             guns = new[] { VoidXWorld.Weapon(weaponCamera.transform, 0), VoidXWorld.Weapon(weaponCamera.transform, 1) };
             weaponPoses = new[] { guns[0].GetComponent<VoidXWeaponPose>(), guns[1].GetComponent<VoidXWeaponPose>() };
-            foreach (var gun in guns) { gun.localPosition = new Vector3(.18f, -.11f, .56f); foreach(var t in gun.GetComponentsInChildren<Transform>())t.gameObject.layer=viewLayer; gun.gameObject.SetActive(false); }
+            foreach (var gun in guns) { gun.localPosition = new Vector3(.22f, -.20f, .59f); foreach(var t in gun.GetComponentsInChildren<Transform>())t.gameObject.layer=viewLayer; gun.gameObject.SetActive(false); }
             muzzleFlash = VoidXWorld.Part(View.transform, "Muzzle flash", new Vector3(.18f, -.127f, 1.30f), new Vector3(.095f, .095f, .13f), VoidXWorld.Glow, PrimitiveType.Sphere); muzzleFlash.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off; muzzleFlash.SetActive(false);
             muzzleLight = new GameObject("Muzzle illumination").AddComponent<Light>(); muzzleLight.transform.SetParent(View.transform, false); muzzleLight.transform.localPosition = new Vector3(.18f, -.127f, 1.24f); muzzleLight.type = LightType.Point; muzzleLight.range = 4; muzzleLight.intensity = 0;
             audioSource = gameObject.AddComponent<AudioSource>(); audioSource.spatialBlend = 0;
@@ -200,7 +201,7 @@ namespace VoidX
             stepPhase += move.magnitude * dt * 9; View.transform.localPosition = new Vector3(0, 1.65f + Mathf.Sin(stepPhase) * .018f * move.magnitude, 0);
             float reloadProgress = ReloadLeft > 0 ? 1 - ReloadLeft / (WeaponIndex == 0 ? 1.75f : 2.3f) : 0;
             float reloadPose = Mathf.Pow(Mathf.Sin(reloadProgress * Mathf.PI), 2);
-            var gun = guns[WeaponIndex]; gun.localPosition = new Vector3(.18f + Mathf.Sin(stepPhase) * .006f, -.11f + Mathf.Cos(stepPhase * 2) * .004f - .035f * reloadPose, .56f - recoil);
+            var gun = guns[WeaponIndex]; gun.localPosition = new Vector3(.22f + Mathf.Sin(stepPhase) * .006f, -.20f + Mathf.Cos(stepPhase * 2) * .004f - .035f * reloadPose, .59f - recoil);
             gun.localRotation = Quaternion.Euler(recoil * 40 + 10 * reloadPose, -8 * reloadPose, 18 * reloadPose);
             pumpLeft = Mathf.Max(0, pumpLeft - dt); weaponPoses[WeaponIndex].Animate(reloadProgress, pumpLeft > 0 ? Mathf.Sin((.48f - pumpLeft) / .48f * Mathf.PI) : 0);
             muzzleFlash.transform.position = View.transform.TransformPoint(gun.localPosition + gun.localRotation * new Vector3(0,.013f,.74f)); muzzleFlash.transform.rotation = View.transform.rotation * gun.localRotation; muzzleLight.transform.position = View.transform.TransformPoint(gun.localPosition + gun.localRotation * new Vector3(0,.013f,.68f));
