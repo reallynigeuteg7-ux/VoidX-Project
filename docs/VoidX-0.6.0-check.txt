@@ -1,0 +1,1 @@
+PASS: native menu, settings, arsenal, start, movement, rifle, headshots, shotgun single-kill scoring, reload, pause, resume, quit, unobstructed spawns, all five waves and victory; no runtime errors.

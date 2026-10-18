@@ -1,0 +1,3 @@
+-keep class com.voidx.auth.GoogleAuthBridge { public *; }
+-keep interface com.voidx.auth.GoogleAuthBridge$Callback { *; }
+-keepattributes Signature,*Annotation*

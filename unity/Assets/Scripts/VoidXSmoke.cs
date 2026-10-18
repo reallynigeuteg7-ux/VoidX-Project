@@ -23,6 +23,12 @@ namespace VoidX
             var game = GetComponent<VoidXGame>(); yield return new WaitForSeconds(2);
             Check(game.State == VoidXGame.Mode.Menu, "Main menu not active");
             yield return Capture("menu");
+            Check(game.Auth && !game.Auth.IsSignedIn, "Guest profile was not initialized");
+            Click("Войти через Google"); yield return null;
+            Check(GameObject.Find("АККАУНТ"), "Account panel did not open");
+            game.Auth.SignIn(); yield return null;
+            Check(!game.Auth.IsSignedIn && !game.Auth.IsBusy, "Unavailable Google sign-in blocked guest play or fabricated a login");
+            game.UI.ClosePanel();
             Click("ПАРАМЕТРЫ"); yield return new WaitForSeconds(.15f); Check(GameObject.Find("ЧУВСТВИТЕЛЬНОСТЬ slider"), "Settings panel did not open"); yield return Capture("settings"); game.UI.ClosePanel();
             Click("АРСЕНАЛ"); yield return new WaitForSeconds(.15f); Check(GameObject.Find("VX—08"), "Arsenal panel did not open"); game.UI.ClosePanel();
             Click("ИГРАТЬ  →"); yield return new WaitForSeconds(2);

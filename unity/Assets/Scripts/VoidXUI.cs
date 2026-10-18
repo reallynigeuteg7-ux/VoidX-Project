@@ -12,6 +12,8 @@ namespace VoidX
         RectTransform safe, stick;
         GameObject menu, hud, pause, result, panel;
         Text record, health, ammo, wave, notice, summary, resultTitle;
+        Text accountLabel;
+        Button accountButton;
         Image hurt, marker;
         Font font;
         Sprite circle;
@@ -29,11 +31,14 @@ namespace VoidX
             var eventSystem = new GameObject("Input events"); eventSystem.AddComponent<EventSystem>(); eventSystem.AddComponent<StandaloneInputModule>();
             safe = Rect(canvasObj.transform, "Safe area", Vector2.zero, Vector2.one);
             menu = Rect(safe, "Main menu", Vector2.zero, Vector2.one).gameObject;
-            Image(menu.transform, "Top shade", new Color(0, 0, 0, .65f), new Vector2(0, .83f), Vector2.one);
+            Image(menu.transform, "Top shade", new Color(0, 0, 0, .65f), new Vector2(0, .74f), Vector2.one);
             Label(menu.transform, "VOIDX", new Vector2(.04f, .855f), new Vector2(.29f, .97f), 45, TextAnchor.MiddleLeft, Color.white, true);
             Label(menu.transform, "МЁРТВЫЙ СЕКТОР  /  ОФЛАЙН", new Vector2(.04f, .81f), new Vector2(.44f, .865f), 16, TextAnchor.MiddleLeft, soft);
             record = Label(menu.transform, "РЕКОРД  00000", new Vector2(.53f, .86f), new Vector2(.79f, .96f), 20, TextAnchor.MiddleRight, soft);
             Button(menu.transform, "ПАРАМЕТРЫ", new Vector2(.81f, .865f), new Vector2(.96f, .96f), Settings, false, 17);
+            accountButton = Button(menu.transform, "Войти через Google", new Vector2(.69f, .755f), new Vector2(.96f, .835f), Account, true, 21);
+            accountLabel = accountButton.GetComponentInChildren<Text>();
+            game.Auth.Changed += AuthChanged; AuthChanged();
             var logo = Resources.Load<Texture2D>("VX-logo");
             if (logo) { var image = Rect(menu.transform, "VX emblem", new Vector2(.32f, .36f), new Vector2(.68f, .77f)).gameObject.AddComponent<RawImage>(); image.texture = logo; image.material = Resources.Load<Material>("VoidXEmblem"); image.uvRect = new Rect(.06f, .2f, .88f, .63f); image.raycastTarget = false; image.color = new Color(1, 1, 1, .9f); }
             Image(menu.transform, "Lower shade", new Color(0, 0, 0, .78f), Vector2.zero, new Vector2(1, .29f));
@@ -84,7 +89,7 @@ namespace VoidX
         }
         Text Label(Transform parent, string text, Vector2 min, Vector2 max, int size, TextAnchor align, Color color, bool bold = false)
         {
-            var label = Rect(parent, text, min, max).gameObject.AddComponent<Text>(); label.text = text; label.font = font; label.fontSize = size; label.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal; label.alignment = align; label.color = color; label.raycastTarget = false; label.resizeTextForBestFit = true; label.resizeTextMinSize = 12; label.resizeTextMaxSize = size; return label;
+            var label = Rect(parent, text, min, max).gameObject.AddComponent<Text>(); label.text = text; label.supportRichText = false; label.font = font; label.fontSize = size; label.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal; label.alignment = align; label.color = color; label.raycastTarget = false; label.resizeTextForBestFit = true; label.resizeTextMinSize = 12; label.resizeTextMaxSize = size; return label;
         }
         Button Button(Transform parent, string text, Vector2 min, Vector2 max, Action action, bool primary = false, int size = 22)
         {
@@ -103,6 +108,25 @@ namespace VoidX
             Button(panel.transform, "ЗАКРЫТЬ", new Vector2(.81f, .82f), new Vector2(.95f, .94f), ClosePanel, false, 18);
         }
         public void ClosePanel() { if (panel) { Destroy(panel); panel = null; game.SaveSettings(); } }
+        void AuthChanged()
+        {
+            var auth = game.Auth;
+            accountLabel.text = auth.IsBusy ? "Вход…" : auth.IsSignedIn ? "АККАУНТ · " + auth.DisplayName : "Войти через Google";
+            accountButton.interactable = !auth.IsBusy;
+            if (panel && panel.name == "АККАУНТ") Account();
+        }
+        void Account()
+        {
+            BeginPanel("АККАУНТ"); var auth = game.Auth;
+            Label(panel.transform, auth.IsSignedIn ? auth.DisplayName : "ГОСТЬ", new Vector2(.08f, .60f), new Vector2(.92f, .76f), 36, TextAnchor.MiddleLeft, Color.white, true);
+            Label(panel.transform, auth.IsSignedIn ? auth.Email : "Войдите через Google, чтобы использовать свой профиль.", new Vector2(.08f, .48f), new Vector2(.92f, .60f), 22, TextAnchor.MiddleLeft, soft);
+            Label(panel.transform, "Рекорд хранится на этом устройстве.", new Vector2(.08f, .34f), new Vector2(.92f, .45f), 18, TextAnchor.MiddleLeft, soft);
+            Label(panel.transform, auth.Message, new Vector2(.08f, .23f), new Vector2(.92f, .34f), 19, TextAnchor.MiddleLeft, Color.white);
+            var action = Button(panel.transform, auth.IsSignedIn ? "ВЫЙТИ ИЗ АККАУНТА" : auth.IsBusy ? "ВХОД…" : "Войти через Google", new Vector2(.08f, .08f), new Vector2(.59f, .20f), () => { if (auth.IsSignedIn) auth.SignOut(); else auth.SignIn(); }, !auth.IsSignedIn, 23);
+            action.interactable = !auth.IsBusy;
+            Button(panel.transform, "ЗАКРЫТЬ", new Vector2(.65f, .08f), new Vector2(.92f, .20f), ClosePanel, false, 21);
+        }
+        void OnDestroy() { if (game && game.Auth) game.Auth.Changed -= AuthChanged; }
         void Settings()
         {
             BeginPanel("ПАРАМЕТРЫ"); Slider("ЧУВСТВИТЕЛЬНОСТЬ", .61f, game.Sensitivity / 100, v => game.Sensitivity = v * 100); Slider("ГРОМКОСТЬ", .41f, game.Volume, v => game.Volume = v);

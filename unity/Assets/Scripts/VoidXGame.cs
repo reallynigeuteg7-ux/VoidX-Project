@@ -31,6 +31,7 @@ namespace VoidX
         public Camera View { get; private set; }
         public CharacterController Player { get; private set; }
         public VoidXUI UI { get; private set; }
+        public VoidXGoogleAuth Auth { get; private set; }
         Transform[] guns;
         VoidXWeaponPose[] weaponPoses;
         Light muzzleLight;
@@ -82,6 +83,7 @@ namespace VoidX
             muzzleLight = new GameObject("Muzzle illumination").AddComponent<Light>(); muzzleLight.transform.SetParent(View.transform, false); muzzleLight.transform.localPosition = new Vector3(.18f, -.127f, 1.24f); muzzleLight.type = LightType.Point; muzzleLight.range = 4; muzzleLight.intensity = 0;
             audioSource = gameObject.AddComponent<AudioSource>(); audioSource.spatialBlend = 0;
             rifleSound = Synth("Rifle", .19f, 2200, .8f); shotgunSound = Synth("Shotgun", .32f, 900, 1); hitSound = Synth("Hit", .1f, 680, .16f, true); reloadSound = Synth("Reload", .17f, 180, .17f, true);
+            Auth = gameObject.AddComponent<VoidXGoogleAuth>();
             ApplyQuality(); UI = gameObject.AddComponent<VoidXUI>(); UI.Init(this); Menu();
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
             if (AutomatedCheck) { UnityEngine.EventSystems.EventSystem.current.enabled = false; gameObject.AddComponent<VoidXSmoke>(); }
