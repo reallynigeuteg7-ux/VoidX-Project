@@ -1,1 +1,6 @@
 PASS: native menu, settings, arsenal, start, movement, rifle, headshots, shotgun single-kill scoring, reload, pause, resume, quit, unobstructed spawns, all five waves and victory; no runtime errors.
+Manual Android check, 2026-10-18, BlueStacks 5 / Android 11, VoidX 0.6.0 (9):
+PASS: real Google sign-in completed by the user; verified profile visible in the game.
+PASS: dismissed VoidX from Android recents; process ended. Relaunched with a new PID; profile restored automatically.
+PASS: in-game sign-out returned to the guest profile and removed the displayed account data.
+No account identifiers, email addresses or profile screenshots are included in this public report.
